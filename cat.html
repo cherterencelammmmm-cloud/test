@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小貓跳毒菇</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+            color: #333;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            max-width: 800px;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 2.8rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 800px;
+            max-width: 100%;
+            margin: 0 auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #fff;
+        }
+        
+        #gameCanvas {
+            display: block;
+            background-color: #f9f9f9;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #ecf0f1;
+        }
+        
+        .score-container {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .score {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        
+        .high-score {
+            font-size: 1.2rem;
+            color: #7f8c8d;
+        }
+        
+        .instructions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            text-align: right;
+        }
+        
+        .instruction {
+            margin-bottom: 8px;
+            color: #2c3e50;
+            font-size: 1rem;
+        }
+        
+        .key {
+            display: inline-block;
+            padding: 3px 8px;
+            background-color: #34495e;
+            color: white;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 0 2px;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            z-index: 10;
+        }
+        
+        .game-over h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #e74c3c;
+        }
+        
+        .final-score {
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+        
+        .restart-btn {
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .restart-btn:hover {
+            background-color: #27ae60;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        .start-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(44, 62, 80, 0.95);
+            color: white;
+            z-index: 20;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .start-screen h2 {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+        
+        .start-screen p {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            max-width: 600px;
+            line-height: 1.6;
+        }
+        
+        .characters {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0 30px;
+        }
+        
+        .character {
+            text-align: center;
+        }
+        
+        .character-img {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 10px;
+        }
+        
+        .start-btn {
+            padding: 18px 50px;
+            font-size: 1.5rem;
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .start-btn:hover {
+            background-color: #c0392b;
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            max-width: 800px;
+        }
+        
+        @media (max-width: 850px) {
+            .game-container {
+                width: 95%;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .instructions {
+                align-items: flex-start;
+                text-align: left;
+            }
+        }
+        
+        @media (max-width: 500px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .characters {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>小貓跳毒菇</h1>
+        <p class="subtitle">幫助小貓跳過毒蘑菇，盡可能獲得高分！</p>
+    </div>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="300"></canvas>
+        
+        <div class="start-screen" id="startScreen">
+            <h2>小貓跳毒菇</h2>
+            <p>一隻可愛的小貓在森林中奔跑，但路上充滿了有毒的蘑菇！幫助小貓跳過這些毒蘑菇，看看你能跑多遠！</p>
+            
+            <div class="characters">
+                <div class="character">
+                    <div class="character-img" style="background-color: #f39c12; border-radius: 50%;"></div>
+                    <div>可愛小貓</div>
+                </div>
+                <div class="character">
+                    <div class="character-img" style="background-color: #27ae60; border-radius: 50%;"></div>
+                    <div>毒蘑菇</div>
+                </div>
+            </div>
+            
+            <button class="start-btn" id="startBtn">開始遊戲</button>
+            <div style="margin-top: 20px;">按空格鍵或上方向鍵跳躍</div>
+        </div>
+        
+        <div class="game-over" id="gameOverScreen">
+            <h2>遊戲結束</h2>
+            <div class="final-score">分數: <span id="finalScore">0</span></div>
+            <button class="restart-btn" id="restartBtn">再玩一次</button>
+        </div>
+        
+        <div class="controls">
+            <div class="score-container">
+                <div class="score">分數: <span id="score">0</span></div>
+                <div class="high-score">最高分: <span id="highScore">0</span></div>
+            </div>
+            
+            <div class="instructions">
+                <div class="instruction">按 <span class="key">空格鍵</span> 或 <span class="key">↑</span> 跳躍</div>
+                <div class="instruction">按 <span class="key">R</span> 重新開始遊戲</div>
+                <div class="instruction">跳過毒蘑菇獲得積分</div>
+            </div>
+        </div>
+    </div>
+    
+    <footer>
+        <p>遊戲靈感來自Google恐龍遊戲 | 設計與開發：HTML5 Canvas遊戲</p>
+    </footer>
+
+    <script>
+        // 遊戲變數
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const finalScoreElement = document.getElementById('finalScore');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        
+        let gameSpeed = 5;
+        let score = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        let gameOver = false;
+        let gameStarted = false;
+        let frames = 0;
+        
+        highScoreElement.textContent = highScore;
+        
+        // 小貓物件
+        const cat = {
+            x: 50,
+            y: canvas.height - 60,
+            width: 40,
+            height: 40,
+            jumpPower: 15,
+            velocity: 0,
+            gravity: 0.8,
+            jumping: false,
+            
+            // 繪製小貓
+            draw: function() {
+                // 小貓身體
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // 小貓耳朵
+                ctx.fillStyle = '#e67e22';
+                ctx.fillRect(this.x - 5, this.y - 10, 10, 15);
+                ctx.fillRect(this.x + this.width - 5, this.y - 10, 10, 15);
+                
+                // 小貓眼睛
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillRect(this.x + 8, this.y + 10, 6, 6);
+                ctx.fillRect(this.x + this.width - 14, this.y + 10, 6, 6);
+                
+                // 小貓尾巴
+                ctx.fillStyle = '#e67e22';
+                ctx.fillRect(this.x + this.width, this.y + this.height - 15, 15, 5);
+                
+                // 小貓腳
+                ctx.fillStyle = '#e67e22';
+                ctx.fillRect(this.x - 5, this.y + this.height - 5, 15, 5);
+                ctx.fillRect(this.x + this.width - 10, this.y + this.height - 5, 15, 5);
+            },
+            
+            // 跳躍
+            jump: function() {
+                if (!this.jumping) {
+                    this.velocity = -this.jumpPower;
+                    this.jumping = true;
+                }
+            },
+            
+            // 更新小貓位置
+            update: function() {
+                // 應用重力
+                this.velocity += this.gravity;
+                this.y += this.velocity;
+                
+                // 確保小貓不會掉出地板
+                if (this.y > canvas.height - 60) {
+                    this.y = canvas.height - 60;
+                    this.jumping = false;
+                    this.velocity = 0;
+                }
+            }
+        };
+        
+        // 蘑菇物件
+        function Mushroom() {
+            this.width = 20 + Math.random() * 20;
+            this.height = 30 + Math.random() * 20;
+            this.x = canvas.width;
+            this.y = canvas.height - this.height - 30;
+            this.color = '#27ae60';
+            
+            // 繪製蘑菇
+            this.draw = function() {
+                // 蘑菇莖
+                ctx.fillStyle = '#8e44ad';
+                ctx.fillRect(this.x, this.y + 10, this.width, this.height - 10);
+                
+                // 蘑菇帽
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.ellipse(
+                    this.x + this.width / 2,
+                    this.y + 10,
+                    this.width / 2 + 5,
+                    10,
+                    0,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+                
+                // 蘑菇斑點
+                ctx.fillStyle = '#c0392b';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + 8, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 3, this.y + 12, 2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(this.x + 2 * this.width / 3, this.y + 12, 2, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            
+            // 更新蘑菇位置
+            this.update = function() {
+                this.x -= gameSpeed;
+            };
+            
+            // 檢查碰撞
+            this.collide = function() {
+                return (
+                    cat.x < this.x + this.width &&
+                    cat.x + cat.width > this.x &&
+                    cat.y < this.y + this.height &&
+                    cat.y + cat.height > this.y
+                );
+            };
+        }
+        
+        // 蘑菇陣列
+        let mushrooms = [];
+        
+        // 雲物件（背景裝飾）
+        function Cloud() {
+            this.x = canvas.width + Math.random() * 100;
+            this.y = 50 + Math.random() * 100;
+            this.width = 60 + Math.random() * 40;
+            this.height = 20 + Math.random() * 20;
+            this.speed = 1 + Math.random() * 2;
+            
+            this.draw = function() {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+            };
+            
+            this.update = function() {
+                this.x -= this.speed;
+                if (this.x < -this.width) {
+                    this.x = canvas.width + 100;
+                    this.y = 50 + Math.random() * 100;
+                }
+            };
+        }
+        
+        // 雲陣列
+        let clouds = [];
+        for (let i = 0; i < 5; i++) {
+            clouds.push(new Cloud());
+        }
+        
+        // 地面
+        function drawGround() {
+            ctx.fillStyle = '#95a5a6';
+            ctx.fillRect(0, canvas.height - 30, canvas.width, 30);
+            
+            // 地面紋理
+            ctx.fillStyle = '#7f8c8d';
+            for (let i = 0; i < canvas.width; i += 20) {
+                ctx.fillRect(i, canvas.height - 30, 10, 5);
+            }
+        }
+        
+        // 生成蘑菇
+        function generateMushroom() {
+            // 每100幀嘗試生成蘑菇
+            if (frames % 100 === 0) {
+                // 70%機率生成蘑菇
+                if (Math.random() > 0.3) {
+                    mushrooms.push(new Mushroom());
+                }
+            }
+        }
+        
+        // 更新蘑菇
+        function updateMushrooms() {
+            for (let i = 0; i < mushrooms.length; i++) {
+                mushrooms[i].update();
+                mushrooms[i].draw();
+                
+                // 檢查碰撞
+                if (mushrooms[i].collide()) {
+                    gameOver = true;
+                }
+                
+                // 移除超出畫布的蘑菇
+                if (mushrooms[i].x + mushrooms[i].width < 0) {
+                    mushrooms.splice(i, 1);
+                    i--;
+                    score++;
+                    scoreElement.textContent = score;
+                    
+                    // 每10分增加速度
+                    if (score % 10 === 0) {
+                        gameSpeed += 0.5;
+                    }
+                }
+            }
+        }
+        
+        // 更新雲
+        function updateClouds() {
+            for (let cloud of clouds) {
+                cloud.update();
+                cloud.draw();
+            }
+        }
+        
+        // 遊戲循環
+        function gameLoop() {
+            // 清除畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 繪製背景
+            ctx.fillStyle = '#ecf0f1';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新和繪製雲
+            updateClouds();
+            
+            // 繪製地面
+            drawGround();
+            
+            // 生成蘑菇
+            generateMushroom();
+            
+            // 更新和繪製蘑菇
+            updateMushrooms();
+            
+            // 更新和繪製小貓
+            cat.update();
+            cat.draw();
+            
+            // 增加幀數
+            frames++;
+            
+            // 如果遊戲未結束，繼續循環
+            if (!gameOver && gameStarted) {
+                requestAnimationFrame(gameLoop);
+            } else if (gameOver && gameStarted) {
+                showGameOver();
+            }
+        }
+        
+        // 顯示遊戲結束畫面
+        function showGameOver() {
+            // 更新最高分
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+                highScoreElement.textContent = highScore;
+            }
+            
+            // 顯示最終分數
+            finalScoreElement.textContent = score;
+            
+            // 顯示遊戲結束畫面
+            gameOverScreen.style.display = 'flex';
+        }
+        
+        // 重置遊戲
+        function resetGame() {
+            score = 0;
+            gameSpeed = 5;
+            frames = 0;
+            gameOver = false;
+            mushrooms = [];
+            cat.y = canvas.height - 60;
+            cat.velocity = 0;
+            cat.jumping = false;
+            scoreElement.textContent = score;
+            gameOverScreen.style.display = 'none';
+            
+            if (gameStarted) {
+                gameLoop();
+            }
+        }
+        
+        // 開始遊戲
+        function startGame() {
+            gameStarted = true;
+            startScreen.style.display = 'none';
+            resetGame();
+        }
+        
+        // 事件監聽
+        document.addEventListener('keydown', function(event) {
+            // 空格鍵或上方向鍵跳躍
+            if ((event.code === 'Space' || event.code === 'ArrowUp') && !gameOver && gameStarted) {
+                cat.jump();
+            }
+            
+            // R鍵重新開始遊戲
+            if (event.code === 'KeyR' && gameStarted) {
+                resetGame();
+            }
+            
+            // 按任意鍵開始遊戲（如果未開始）
+            if (!gameStarted && startScreen.style.display !== 'none') {
+                startGame();
+            }
+        });
+        
+        // 點擊開始按鈕
+        startBtn.addEventListener('click', startGame);
+        
+        // 點擊重新開始按鈕
+        restartBtn.addEventListener('click', resetGame);
+        
+        // 點擊遊戲區域跳躍（適用於移動設備）
+        canvas.addEventListener('click', function() {
+            if (!gameOver && gameStarted) {
+                cat.jump();
+            } else if (!gameStarted) {
+                startGame();
+            }
+        });
+        
+        // 初始化遊戲
+        gameLoop();
+    </script>
+</body>
+</html>
