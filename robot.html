@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🥊 機器人決鬥 Pro</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #1a1a1a; 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh;
+            user-select: none;
+        }
+        
+        canvas { 
+            background: #252525; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5); 
+            border: 2px solid #333; 
+            border-radius: 4px; 
+        }
+
+        /* UI 層 */
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            width: 600px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .health-bar-wrap {
+            width: 250px;
+            height: 20px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #555;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            transform: skewX(-20deg); /* 未來感傾斜 */
+        }
+
+        .bar { 
+            height: 100%; 
+            width: 100%; 
+            transition: width 0.2s ease-out; 
+        }
+        
+        #p-bar { background: linear-gradient(90deg, #00f3ff, #0077ff); }
+        #e-bar { background: linear-gradient(90deg, #ff4757, #ff9f43); }
+
+        .label {
+            position: absolute;
+            top: -25px;
+            width: 100%;
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        #p-label { color: #00f3ff; }
+        #e-label { color: #ff4757; }
+
+        /* 開始/教學畫面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        h1 { 
+            font-size: 3rem; 
+            margin-bottom: 10px; 
+            color: #fff; 
+            text-shadow: 0 0 20px #00f3ff;
+            font-family: monospace;
+        }
+
+        .tutorial-box {
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.2);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .key-row { margin: 15px 0; font-size: 1.2rem; }
+        .key { 
+            display: inline-block; 
+            padding: 8px 12px; 
+            background: #333; 
+            border-bottom: 3px solid #111; 
+            color: #fff; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            margin: 0 5px;
+            font-weight: bold;
+        }
+
+        .btn-start {
+            background: #00f3ff;
+            color: #000;
+            border: none;
+            padding: 15px 50px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.5);
+            transition: all 0.2s;
+        }
+        .btn-start:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0, 243, 255, 0.8); }
+
+        /* Game Over */
+        #msg { 
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            font-size: 4rem; 
+            color: white; 
+            font-weight: 900; 
+            text-shadow: 0 5px 15px black;
+            display: none; 
+            pointer-events: none;
+            z-index: 50;
+            text-transform: uppercase;
+        }
+
+        .controls { position: absolute; bottom: 10px; left: 10px; color: #555; font-size: 0.8rem; pointer-events: none;}
+        .back-link { position: absolute; top: 10px; right: 10px; color: #555; text-decoration: none; font-size: 0.8rem;}
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="health-bar-wrap">
+            <div class="bar" id="p-bar"></div>
+            <div class="label" id="p-label">YOU</div>
+        </div>
+        <div class="health-bar-wrap">
+            <div class="bar" id="e-bar"></div>
+            <div class="label" id="e-label">ENEMY</div>
+        </div>
+    </div>
+
+    <div id="start-screen">
+        <h1>ROBOT DUEL</h1>
+        <div class="tutorial-box">
+            <div class="key-row"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> 移動</div>
+            <div class="key-row"><span class="key" style="width: 80px;">SPACE</span> 攻擊</div>
+        </div>
+        <button class="btn-start" onclick="startGame()">START FIGHT</button>
+    </div>
+
+    <div id="msg">WINNER</div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="controls">PC Only (Keyboard Required)</div>
+    <a href="index.html" class="back-link">← Back</a>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = 600;
+        canvas.height = 400;
+
+        let keys = {};
+        window.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+        // --- 物理參數 ---
+        const ACCEL = 0.8; // 加速度 (越越大起得越快)
+        const FRICTION = 0.85; // 摩擦力 (越小停得越快)
+        const MAX_SPEED = 6; // 最大速度
+
+        class Robot {
+            constructor(x, y, color, isPlayer) {
+                this.x = x; 
+                this.y = y;
+                this.w = 40; 
+                this.h = 40;
+                this.color = color;
+                this.hp = 100;
+                this.isPlayer = isPlayer;
+                
+                // 速度變數
+                this.vx = 0;
+                this.vy = 0;
+                
+                this.attackCooldown = 0;
+                this.facing = 1; // 1: Right, -1: Left
+            }
+
+            update(target) {
+                // 1. 計算加速度
+                let ax = 0;
+                let ay = 0;
+
+                if (this.isPlayer) {
+                    // 玩家鍵盤控制
+                    if (keys['w']) ay -= ACCEL;
+                    if (keys['s']) ay += ACCEL;
+                    if (keys['a']) ax -= ACCEL;
+                    if (keys['d']) ax += ACCEL;
+                    if (keys[' '] && this.attackCooldown === 0) this.attack();
+                } else {
+                    // AI 簡單追蹤邏輯
+                    const dx = target.x - this.x;
+                    const dy = target.y - this.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist > 50) { // 保持距離，貼太近就攻擊
+                        ax = (dx / dist) * ACCEL;
+                        ay = (dy / dist) * ACCEL;
+                    }
+                    
+                    // AI 攻擊邏輯
+                    if (dist < 80 && this.attackCooldown === 0 && Math.random() < 0.05) {
+                        this.attack();
+                    }
+                }
+
+                // 2. 應用加速度到速度
+                this.vx += ax;
+                this.vy += ay;
+
+                // 3. 摩擦力 (讓移動平滑停止)
+                this.vx *= FRICTION;
+                this.vy *= FRICTION;
+
+                // 4. 限制最大速度
+                const speed = Math.sqrt(this.vx*this.vx + this.vy*this.vy);
+                if (speed > MAX_SPEED) {
+                    this.vx = (this.vx / speed) * MAX_SPEED;
+                    this.vy = (this.vy / speed) * MAX_SPEED;
+                }
+
+                // 5. 更新位置
+                this.x += this.vx;
+                this.y += this.vy;
+
+                // 6. 邊界限制
+                this.x = Math.max(20, Math.min(canvas.width - 20, this.x));
+                this.y = Math.max(20, Math.min(canvas.height - 20, this.y));
+
+                // 7. 更新面朝方向 (基於相對位置)
+                const faceDir = target.x - this.x;
+                this.facing = faceDir >= 0 ? 1 : -1;
+
+                // 冷卻遞減
+                if (this.attackCooldown > 0) this.attackCooldown--;
+            }
+
+            attack() {
+                this.attackCooldown = 40; 
+                
+                // 繪製攻擊特效
+                const attackX = this.x + (this.facing * 25);
+                const attackY = this.y;
+                
+                // 攻擊判定區塊
+                const hitBox = { x: attackX - 20, y: attackY - 20, w: 40, h: 40 };
+                
+                // 視覺效果
+                ctx.save();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(attackX, attackY, 30, 0, Math.PI*2); // 能量波
+                ctx.stroke();
+                ctx.restore();
+
+                // 判定是否擊中
+                const enemy = this.isPlayer ? enemyRobot : playerRobot;
+                if (checkRectCollision(hitBox, enemy)) {
+                    enemy.takeDamage(10, this.facing);
+                }
+            }
+
+            takeDamage(amount, fromDirection) {
+                this.hp -= amount;
+                updateBars();
+                
+                // 擊退效果
+                this.vx = fromDirection * 10;
+                this.vy = -2;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                // 根據面朝方向翻轉
+                if (this.facing === -1) ctx.scale(-1, 1);
+
+                // 機器人本體
+                ctx.fillStyle = this.color;
+                // 霓虹光暈
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                
+                ctx.beginPath();
+                // 身體
+                ctx.roundRect(-15, -15, 30, 30, 5); 
+                ctx.fill();
+
+                // 頭
+                ctx.fillStyle = '#fff';
+                ctx.shadowBlur = 0;
+                ctx.fillRect(-5, -25, 10, 10);
+
+                // 拳頭/武器
+                ctx.fillStyle = '#555';
+                ctx.fillRect(15, -5, 15, 10); // 右拳
+
+                ctx.restore();
+            }
+        }
+
+        // 簡單的矩形碰撞檢測
+        function checkRectCollision(rect1, obj2) {
+            // obj2 中心點座標，大約半徑 15
+            const r2Left = obj2.x - 15;
+            const r2Right = obj2.x + 15;
+            const r2Top = obj2.y - 15;
+            const r2Bottom = obj2.y + 15;
+
+            return (rect1.x < r2Right &&
+                    rect1.x + rect1.w > r2Left &&
+                    rect1.y < r2Bottom &&
+                    rect1.y + rect1.h > r2Top);
+        }
+
+        const playerRobot = new Robot(100, 200, '#00f3ff', true);
+        const enemyRobot = new Robot(500, 200, '#ff4757', false);
+        let gameRunning = false;
+        let animationId;
+
+        function updateBars() {
+            document.getElementById('p-bar').style.width = Math.max(0, playerRobot.hp) + '%';
+            document.getElementById('e-bar').style.width = Math.max(0, enemyRobot.hp) + '%';
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height); ctx.stroke();
+            }
+            for(let i=0; i<canvas.height; i+=40) {
+                ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(canvas.width, i); ctx.stroke();
+            }
+        }
+
+        function gameLoop() {
+            if(!gameRunning) return;
+            
+            // 清除並繪製背景
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawGrid();
+
+            // 更新與繪製玩家
+            playerRobot.update(enemyRobot);
+            playerRobot.draw();
+
+            // 更新與繪製敵人
+            enemyRobot.update(playerRobot);
+            enemyRobot.draw();
+
+            // 檢查勝負
+            if (playerRobot.hp <= 0 || enemyRobot.hp <= 0) {
+                gameOver();
+                return;
+            }
+
+            animationId = requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameRunning = true;
+            gameLoop();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            const msg = document.getElementById('msg');
+            msg.style.display = 'block';
+            
+            if (playerRobot.hp > 0) {
+                msg.innerText = "YOU WIN!";
+                msg.style.color = "#00f3ff";
+            } else {
+                msg.innerText = "YOU LOSE";
+                msg.style.color = "#ff4757";
+            }
+            
+            // 3秒後重新載入
+            setTimeout(() => {
+                location.reload();
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
