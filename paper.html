@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>手勢包剪揼 - Hand Gesture RPS</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <style>
+        :root {
+            --bg-color: #0d0d1e;
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00aa;
+            --neon-green: #00ff66;
+            --neon-yellow: #ffee00;
+            --neon-red: #ff3333;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: var(--bg-color);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #fff;
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #webcam {
+            position: absolute;
+            top: 0;
+            left: 0;
+            transform: scaleX(-1);
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.3;
+            z-index: 0;
+        }
+
+        #gameCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* UI Overlays */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Score Board */
+        #scoreBoard {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .score-item {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 20px;
+            border-radius: 15px;
+            border: 1px solid var(--neon-blue);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.2);
+        }
+
+        .score-val {
+            color: var(--neon-yellow);
+            font-size: 32px;
+            margin-left: 10px;
+            font-family: monospace;
+        }
+
+        /* Timer Bar */
+        #timerContainer {
+            width: 100%;
+            height: 8px;
+            background: rgba(255,255,255,0.1);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #timerBar {
+            width: 100%;
+            height: 100%;
+            background: var(--neon-green);
+            transition: width 0.1s linear, background-color 0.3s;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* Central Display (Opponent Move) */
+        #centerDisplay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        #opponentEmoji {
+            font-size: 140px;
+            filter: drop-shadow(0 0 30px rgba(255,255,255,0.6));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        #instructionText {
+            font-size: 32px;
+            color: #fff;
+            margin-top: 30px;
+            text-shadow: 0 0 15px #000;
+            background: rgba(0,0,0,0.6);
+            padding: 8px 30px;
+            border-radius: 50px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* Result Feedback */
+        #resultText {
+            font-size: 80px;
+            font-weight: 900;
+            text-transform: uppercase;
+            opacity: 0;
+            transition: transform 0.3s, opacity 0.3s;
+            z-index: 25;
+            text-shadow: 0 0 30px rgba(0,0,0,0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            width: 100%;
+            text-align: center;
+        }
+
+        .win { color: var(--neon-green); text-shadow: 0 0 20px var(--neon-green); }
+        .lose { color: var(--neon-red); text-shadow: 0 0 20px var(--neon-red); }
+        .draw { color: #ccc; }
+
+        /* Screens */
+        #startScreen,
+        #gameOverScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 13, 30, 0.95);
+            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            overflow-y: auto; /* Allow scrolling for instructions if needed on small screens */
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #fff;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--neon-pink), 0 0 40px var(--neon-blue);
+            text-align: center;
+            line-height: 1.2;
+        }
+
+        h2 { 
+            font-size: 28px; 
+            color: var(--neon-blue); 
+            margin-bottom: 20px; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px var(--neon-blue);
+        }
+        
+        /* Instructions Panel */
+        .instructions {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 30px;
+            max-width: 600px;
+            text-align: left;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            line-height: 1.5;
+        }
+        .step:last-child { margin-bottom: 0; }
+        
+        .step-num {
+            background: var(--neon-pink);
+            color: #fff;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+            box-shadow: 0 0 10px var(--neon-pink);
+        }
+
+        .rule-highlight {
+            color: var(--neon-yellow);
+            font-weight: bold;
+        }
+
+        .gesture-guide {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .gesture-item {
+            text-align: center;
+            opacity: 0.9;
+        }
+        .gesture-emoji { font-size: 40px; display: block; margin-bottom: 5px; }
+        .gesture-name { font-size: 14px; color: #aaa; }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 60px;
+            font-size: 28px;
+            background: transparent;
+            color: #fff;
+            border: 3px solid var(--neon-blue);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+            text-shadow: 0 0 5px var(--neon-blue);
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: var(--neon-blue);
+            color: #000;
+            box-shadow: 0 0 30px var(--neon-blue);
+            transform: scale(1.05);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        /* Player Gesture Debug */
+        #playerGestureDisplay {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 30px;
+            display: none;
+        }
+        
+        #loadingText {
+            margin-top: 15px;
+            color: var(--neon-blue);
+            font-size: 16px;
+            animation: pulse 1.5s infinite;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <video id="webcam" playsinline></video>
+        <canvas id="gameCanvas"></canvas>
+
+        <div id="timerContainer"><div id="timerBar"></div></div>
+
+        <div class="ui-layer">
+            <div id="scoreBoard">
+                <div class="score-item">勝分 <span id="scoreVal" class="score-val">0</span></div>
+                <div class="score-item">連勝 <span id="streakVal" class="score-val">0</span></div>
+            </div>
+
+            <div id="centerDisplay">
+                <div id="opponentEmoji">❓</div>
+                <div id="instructionText">準備開始...</div>
+                <div id="resultText"></div>
+            </div>
+            
+            <!-- Debug / Current Hand Gesture Display -->
+            <div id="playerGestureDisplay"></div>
+        </div>
+
+        <div id="startScreen">
+            <h1>手勢包剪揼<br><span style="font-size: 24px; color: var(--neon-pink);">Neon Hand Battle</span></h1>
+            
+            <!-- 遊戲說明區塊 -->
+            <div class="instructions">
+                <h2>📜 遊戲規則</h2>
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <div>遊戲時間 <span class="rule-highlight">60秒</span>，挑戰最高分。</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <div>畫面中央會顯示對手的出拳。</div>
+                </div>
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <div>請迅速比出 <span class="rule-highlight">贏過對手</span> 的手勢！<br>
+                    <span style="font-size:14px; color:#aaa; margin-left:45px;">(例: 對手出✊，你要出🖐️)</span></div>
+                </div>
+
+                <div class="gesture-guide">
+                    <div class="gesture-item">
+                        <span class="gesture-emoji">✊</span>
+                        <span class="gesture-name">石頭</span>
+                    </div>
+                    <div class="gesture-item">
+                        <span class="gesture-emoji">✌️</span>
+                        <span class="gesture-name">剪刀</span>
+                    </div>
+                    <div class="gesture-item">
+                        <span class="gesture-emoji">🖐️</span>
+                        <span class="gesture-name">布</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn" id="startBtn" disabled>載入中...</button>
+            <div id="loadingText">正在初始化視覺模型...</div>
+        </div>
+
+        <div id="gameOverScreen" class="hidden">
+            <h1>時間到</h1>
+            <p style="font-size: 24px; margin-bottom: 20px;">最終勝分: <span id="finalScore" style="color: var(--neon-yellow); font-weight: bold; font-size: 36px;">0</span></p>
+            <button class="btn" id="restartBtn">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        // --- GAME CONFIGURATION ---
+        const CONFIG = {
+            roundTime: 180, // Frames for countdown (approx 3 seconds @ 60fps)
+            totalGameTime: 60 * 60, // 60 seconds total game time
+            gestureConfidenceFrames: 5 // How many frames to hold gesture to confirm
+        };
+
+        const MOVES = ['rock', 'paper', 'scissors'];
+        const EMOJIS = {
+            'rock': '✊',
+            'paper': '🖐️',
+            'scissors': '✌️',
+            'unknown': '❔'
+        };
+
+        // --- GLOBAL STATE ---
+        const state = {
+            gameRunning: false,
+            score: 0,
+            streak: 0,
+            gameTime: CONFIG.totalGameTime,
+            roundState: 'IDLE', // IDLE, SHOWING, WAITING, RESULT
+            roundTimer: 0,
+            currentOpponentMove: null,
+            detectedGesture: 'unknown',
+            gestureFrames: 0,
+            // handPositions 已移除，不再追蹤軌跡
+            particles: []
+        };
+
+        // --- DOM ELEMENTS ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreVal = document.getElementById('scoreVal');
+        const streakVal = document.getElementById('streakVal');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const startBtn = document.getElementById('startBtn');
+        const loadingText = document.getElementById('loadingText');
+        const finalScoreEl = document.getElementById('finalScore');
+        const opponentEmoji = document.getElementById('opponentEmoji');
+        const instructionText = document.getElementById('instructionText');
+        const resultText = document.getElementById('resultText');
+        const timerBar = document.getElementById('timerBar');
+        const playerGestureDisplay = document.getElementById('playerGestureDisplay');
+
+        // --- RESIZE HANDLER ---
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // --- GESTURE RECOGNITION LOGIC ---
+        
+        // Check if a finger is extended
+        function isFingerExtended(landmarks, tipIdx, pipIdx) {
+            return landmarks[tipIdx].y < landmarks[pipIdx].y;
+        }
+
+        function detectHandGesture(landmarks) {
+            // Indices: Thumb(4), Index(8), Middle(12), Ring(16), Pinky(20)
+            // PIP joints (knuckles): Thumb(3), Index(6), Middle(10), Ring(14), Pinky(18)
+            
+            const indexOpen = isFingerExtended(landmarks, 8, 6);
+            const middleOpen = isFingerExtended(landmarks, 12, 10);
+            const ringOpen = isFingerExtended(landmarks, 16, 14);
+            const pinkyOpen = isFingerExtended(landmarks, 20, 18);
+            
+            const openCount = [indexOpen, middleOpen, ringOpen, pinkyOpen].filter(Boolean).length;
+
+            // Simple Heuristics
+            if (openCount === 0) {
+                return 'rock'; // Fist
+            } else if (openCount === 4) {
+                return 'paper'; // Palm
+            } else if (openCount === 2 && indexOpen && middleOpen && !ringOpen && !pinkyOpen) {
+                return 'scissors'; // V-sign
+            }
+            
+            return 'unknown';
+        }
+
+        // --- CLASSES ---
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.02 + 0.01;
+                this.size = Math.random() * 8 + 4;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // Light gravity
+                this.life -= this.decay;
+                this.alpha = this.life;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class FloatingText {
+            constructor(x, y, text, color, size = 40) {
+                this.x = x;
+                this.y = y;
+                this.text = text;
+                this.color = color;
+                this.life = 1.0;
+                this.vy = -3;
+                this.size = size;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.life -= 0.02;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.font = `bold ${this.size}px Arial`;
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 4;
+                ctx.strokeText(this.text, this.x, this.y);
+                ctx.fillText(this.text, this.x, this.y);
+                ctx.restore();
+            }
+        }
+
+        // --- GAME LOGIC FUNCTIONS ---
+
+        function spawnParticles(x, y, color, count = 15) {
+            for (let i = 0; i < count; i++) {
+                state.particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function startRound() {
+            state.roundState = 'SHOWING';
+            state.roundTimer = CONFIG.roundTime;
+            
+            // Pick random move
+            const randomMove = MOVES[Math.floor(Math.random() * MOVES.length)];
+            state.currentOpponentMove = randomMove;
+
+            // Visual Reset
+            opponentEmoji.innerText = '❓';
+            opponentEmoji.style.transform = 'scale(0.5)';
+            opponentEmoji.style.opacity = '0';
+            
+            instructionText.innerText = "預備...";
+            instructionText.style.color = '#fff';
+            instructionText.style.borderColor = "rgba(255,255,255,0.2)";
+            resultText.style.opacity = '0';
+            resultText.style.transform = 'translate(-50%, -50%) scale(0.5)';
+            
+            setTimeout(() => {
+                if(!state.gameRunning) return;
+                opponentEmoji.innerText = EMOJIS[state.currentOpponentMove];
+                opponentEmoji.style.transform = 'scale(1)';
+                opponentEmoji.style.opacity = '1';
+                state.roundState = 'WAITING';
+                instructionText.innerText = "出拳！";
+                instructionText.style.color = 'var(--neon-yellow)';
+                instructionText.style.borderColor = 'var(--neon-yellow)';
+            }, 800); 
+        }
+
+        function resolveRound(playerMove) {
+            state.roundState = 'RESULT';
+            const cpuMove = state.currentOpponentMove;
+            
+            let result = ''; // win, lose, draw
+
+            if (playerMove === cpuMove) {
+                result = 'draw';
+            } else if (
+                (playerMove === 'rock' && cpuMove === 'scissors') ||
+                (playerMove === 'paper' && cpuMove === 'rock') ||
+                (playerMove === 'scissors' && cpuMove === 'paper')
+            ) {
+                result = 'win';
+            } else {
+                result = 'lose';
+            }
+
+            // Apply Result
+            if (result === 'win') {
+                state.score += 10 + (state.streak * 2);
+                state.streak++;
+                resultText.innerText = "勝利!";
+                resultText.className = 'win';
+                spawnParticles(canvas.width/2, canvas.height/2, '#00ff66', 30);
+                state.particles.push(new FloatingText(canvas.width/2, canvas.height/2 - 100, `+${10 + ((state.streak-1)*2)}`, '#00ff66'));
+            } else if (result === 'lose') {
+                state.streak = 0;
+                resultText.innerText = "失敗!";
+                resultText.className = 'lose';
+                spawnParticles(canvas.width/2, canvas.height/2, '#ff3333', 10);
+            } else {
+                resultText.innerText = "平手";
+                resultText.className = 'draw';
+            }
+
+            // Show Feedback
+            updateUI();
+            resultText.style.opacity = '1';
+            resultText.style.transform = 'translate(-50%, -50%) scale(1)';
+            
+            // Next Round
+            setTimeout(() => {
+                if (state.gameRunning) {
+                    startRound();
+                }
+            }, 2000);
+        }
+
+        function updateUI() {
+            scoreVal.innerText = state.score;
+            streakVal.innerText = state.streak;
+        }
+
+        function resetGame() {
+            state.score = 0;
+            state.streak = 0;
+            state.gameTime = CONFIG.totalGameTime;
+            state.gameRunning = true;
+            state.particles = [];
+            updateUI();
+            gameOverScreen.classList.add('hidden');
+            startScreen.classList.add('hidden');
+            
+            startRound();
+        }
+
+        function gameOver() {
+            state.gameRunning = false;
+            finalScoreEl.innerText = state.score;
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        // --- MEDIAPIPE SETUP ---
+        const videoElement = document.getElementById('webcam');
+
+        function onResults(results) {
+            // Hand Tracking
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Mirror X coordinate for logic consistency
+                const mirroredLandmarks = landmarks.map(lm => ({x: 1 - lm.x, y: lm.y, z: lm.z}));
+
+                // Gesture Detection
+                const gesture = detectHandGesture(mirroredLandmarks);
+                
+                // Smooth output (debounce)
+                if (gesture === state.detectedGesture) {
+                    state.gestureFrames++;
+                } else {
+                    state.gestureFrames = 0;
+                    state.detectedGesture = gesture;
+                }
+
+                // Update Debug UI (Player Gesture Display)
+                if (gesture !== 'unknown') {
+                    playerGestureDisplay.style.display = 'block';
+                    playerGestureDisplay.innerText = `偵測: ${EMOJIS[gesture]}`;
+                    const wrist = mirroredLandmarks[0];
+                    // Move display near hand
+                    playerGestureDisplay.style.left = 'auto';
+                    playerGestureDisplay.style.right = '20px';
+                    playerGestureDisplay.style.top = 'auto';
+                    playerGestureDisplay.style.bottom = '20px';
+                } else {
+                    playerGestureDisplay.style.display = 'none';
+                }
+
+                // Game Logic: Check input if waiting
+                if (state.gameRunning && state.roundState === 'WAITING') {
+                    // Require stable gesture for a few frames
+                    if (state.gestureFrames > CONFIG.gestureConfidenceFrames && gesture !== 'unknown') {
+                        resolveRound(gesture);
+                    }
+                }
+
+            } else {
+                // Hand lost
+                playerGestureDisplay.style.display = 'none';
+            }
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+            }
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        hands.onResults(onResults);
+
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({ image: videoElement });
+            },
+            width: 1280,
+            height: 720
+        });
+
+        // --- GAME LOOP ---
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Game Logic
+            if (state.gameRunning) {
+                // Total Game Timer
+                state.gameTime--;
+                
+                if (state.gameTime <= 0) {
+                    gameOver();
+                }
+
+                // Round Timer Logic
+                if (state.roundState === 'WAITING') {
+                    state.roundTimer--;
+                    const pct = Math.max(0, state.roundTimer / CONFIG.roundTime);
+                    timerBar.style.width = (pct * 100) + '%';
+                    
+                    if (pct < 0.3) {
+                        timerBar.style.backgroundColor = 'var(--neon-red)';
+                        timerBar.style.boxShadow = '0 0 10px var(--neon-red)';
+                    } else {
+                        timerBar.style.backgroundColor = 'var(--neon-green)';
+                        timerBar.style.boxShadow = '0 0 10px var(--neon-green)';
+                    }
+
+                    if (state.roundTimer <= 0) {
+                        // Time run out for this round
+                        resolveRound('lose'); // Auto lose
+                        state.particles.push(new FloatingText(canvas.width/2, canvas.height/2 - 50, "超時!", "red"));
+                    }
+                } else {
+                    timerBar.style.width = '100%';
+                    timerBar.style.backgroundColor = 'var(--neon-blue)';
+                    timerBar.style.boxShadow = '0 0 10px var(--neon-blue)';
+                }
+            }
+
+            // Draw Particles
+            for (let i = state.particles.length - 1; i >= 0; i--) {
+                const p = state.particles[i];
+                p.update();
+                p.draw();
+                if (p.life <= 0) state.particles.splice(i, 1);
+            }
+
+            // --- 手動軌跡效果已在此移除 (原 Draw Hand Trail 區塊) ---
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- INITIALIZATION ---
+        startBtn.addEventListener('click', () => {
+            resetGame();
+        });
+
+        document.getElementById('restartBtn').addEventListener('click', () => {
+            resetGame();
+        });
+
+        // Initialize Camera
+        camera.start()
+            .then(() => {
+                startBtn.removeAttribute('disabled');
+                startBtn.innerText = "開始遊戲";
+                loadingText.style.display = 'none';
+                console.log('Camera started');
+                loop();
+            })
+            .catch(err => {
+                console.error(err);
+                loadingText.innerText = "無法啟動鏡頭，請檢查權限。";
+                loadingText.style.color = "var(--neon-red)";
+            });
+
+    </script>
+</body>
+
+</html>
