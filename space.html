@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🚀 太空防衛 Ultimate</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%); 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            color: white; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            height: 100vh;
+        }
+        
+        canvas { 
+            background: transparent;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1); 
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+        }
+        
+        /* UI 元素 */
+        #ui-layer { 
+            position: absolute; 
+            top: 20px; 
+            width: 100%; 
+            display: flex; 
+            justify-content: space-between; 
+            padding: 0 50px; 
+            box-sizing: border-box; 
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .score-box { font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 10px rgba(0,243,255,0.8); }
+        .score-val { color: #00f3ff; }
+
+        /* 教學/開始畫面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        h1 { font-size: 3rem; margin-bottom: 10px; background: linear-gradient(to right, #00f3ff, #bc13fe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tutorial { margin: 30px 0; font-size: 1.1rem; color: #ccc; line-height: 2; }
+        .key-badge { display: inline-block; padding: 5px 10px; background: #333; border: 1px solid #555; border-radius: 5px; font-family: monospace; color: #fff; margin: 0 5px; }
+        
+        button { 
+            padding: 15px 40px; font-size: 1.5rem; 
+            background: linear-gradient(45deg, #00f3ff, #0066ff); 
+            border: none; border-radius: 50px; color: white; 
+            cursor: pointer; font-weight: bold; 
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(0, 243, 255, 0.6); }
+
+        /* Game Over 畫面 */
+        #game-over-screen {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; display: none; pointer-events: auto; z-index: 50;
+        }
+        .back-link { position: absolute; top: 20px; right: 20px; color: rgba(255,255,255,0.4); text-decoration: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+
+    <div id="ui-layer">
+        <div class="score-box">SCORE: <span id="score" class="score-val">0</span></div>
+    </div>
+
+    <a href="index.html" class="back-link">← 返回主選單</a>
+
+    <!-- 教學畫面 -->
+    <div id="start-screen">
+        <h1>🚀 太空防衛</h1>
+        <div class="tutorial">
+            <div><span class="key-badge">←</span> <span class="key-badge">→</span> 移動飛船</div>
+            <div style="margin-top: 15px;"><span class="key-badge">SPACE</span> 發射雷射</div>
+        </div>
+        <p style="color: #ff6b6b; font-size: 0.9rem;">⚠️ 敵人速度已提升，小心！</p>
+        <br>
+        <button onclick="startGame()">開始任務</button>
+    </div>
+
+    <!-- Game Over 畫面 -->
+    <div id="game-over-screen">
+        <h2 style="font-size: 3rem; color: #ff4757; margin-bottom: 20px;">MISSION FAILED</h2>
+        <p style="font-size: 1.2rem;">最終分數: <span id="final-score" style="color: #00f3ff; font-weight: bold;">0</span></p>
+        <br>
+        <button onclick="location.reload()">重新挑戰</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 設定畫布大小 (保持一定比例，適應螢幕)
+        function resizeCanvas() {
+            canvas.width = window.innerWidth > 800 ? 800 : window.innerWidth - 30;
+            canvas.height = window.innerHeight > 600 ? 600 : window.innerHeight - 30;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        let player = { x: canvas.width/2, y: canvas.height - 60, w: 40, h: 50, speed: 7, dx: 0 };
+        let bullets = [];
+        let enemies = [];
+        let score = 0;
+        let gameRunning = false;
+        let frame = 0;
+        let animationId;
+
+        // 背景星星
+        let stars = [];
+        for(let i=0; i<100; i++) {
+            stars.push({x: Math.random()*800, y: Math.random()*600, size: Math.random()*2, speed: Math.random()*0.5 + 0.1});
+        }
+
+        // 按鍵監聽
+        document.addEventListener('keydown', (e) => {
+            if(e.key === 'ArrowLeft') player.dx = -player.speed;
+            if(e.key === 'ArrowRight') player.dx = player.speed;
+            if(e.key === ' ' && gameRunning) shoot();
+        });
+        document.addEventListener('keyup', (e) => {
+            if(e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
+        });
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            gameRunning = true;
+            loop();
+        }
+
+        function shoot() {
+            bullets.push({ x: player.x, y: player.y - 25, w: 4, h: 15, speed: 10, color: '#00f3ff' });
+        }
+
+        // --- 繪製超酷飛船 ---
+        function drawPlayer() {
+            const x = player.x;
+            const y = player.y;
+
+            // 1. 引擎火焰 (動態閃爍)
+            ctx.save();
+            ctx.fillStyle = `rgba(255, 100, 0, ${Math.random() * 0.5 + 0.5})`;
+            ctx.beginPath();
+            ctx.moveTo(x - 10, y + 20);
+            ctx.lineTo(x + 10, y + 20);
+            ctx.lineTo(x, y + 20 + Math.random() * 20 + 10); // 隨機長度
+            ctx.fill();
+            ctx.restore();
+
+            // 2. 飛船本體 (流線型)
+            ctx.save();
+            // 漸層色
+            let grad = ctx.createLinearGradient(x, y - 30, x, y + 20);
+            grad.addColorStop(0, '#e0f7fa');
+            grad.addColorStop(0.5, '#00e5ff');
+            grad.addColorStop(1, '#0091ea');
+            
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00e5ff';
+
+            ctx.beginPath();
+            // 機頭
+            ctx.moveTo(x, y - 30);
+            // 右翼
+            ctx.bezierCurveTo(x + 25, y - 10, x + 20, y + 20, x, y + 20);
+            // 左翼
+            ctx.bezierCurveTo(x - 20, y + 20, x - 25, y - 10, x, y - 30);
+            ctx.fill();
+            ctx.restore();
+
+            // 3. 駕駛艙
+            ctx.fillStyle = '#1a237e';
+            ctx.beginPath();
+            ctx.ellipse(x, y - 5, 5, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // --- 敵人繪製 (多種形狀) ---
+        function drawEnemy(enemy) {
+            ctx.save();
+            ctx.fillStyle = enemy.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = enemy.color;
+            
+            // 根據形狀繪製
+            if (enemy.shape === 'square') {
+                ctx.fillRect(enemy.x - enemy.size/2, enemy.y - enemy.size/2, enemy.size, enemy.size);
+                // 加上內部細節
+                ctx.fillStyle = 'rgba(0,0,0,0.2)';
+                ctx.fillRect(enemy.x - enemy.size/4, enemy.y - enemy.size/4, enemy.size/2, enemy.size/2);
+            } 
+            else if (enemy.shape === 'circle') {
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size/2, 0, Math.PI * 2);
+                ctx.fill();
+                // 核心光點
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size/6, 0, Math.PI * 2);
+                ctx.fill();
+            } 
+            else if (enemy.shape === 'triangle') {
+                ctx.beginPath();
+                ctx.moveTo(enemy.x, enemy.y - enemy.size/2);
+                ctx.lineTo(enemy.x + enemy.size/2, enemy.y + enemy.size/2);
+                ctx.lineTo(enemy.x - enemy.size/2, enemy.y + enemy.size/2);
+                ctx.closePath();
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        function update() {
+            if(!gameRunning) return;
+            
+            // 清空畫布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 繪製背景星空
+            ctx.fillStyle = 'white';
+            stars.forEach(star => {
+                star.y += star.speed;
+                if(star.y > canvas.height) star.y = 0;
+                ctx.globalAlpha = Math.random() * 0.5 + 0.3;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI*2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+
+            // Player Logic
+            player.x += player.dx;
+            // 邊界限制
+            if(player.x < 30) player.x = 30;
+            if(player.x > canvas.width - 30) player.x = canvas.width - 30;
+            drawPlayer();
+
+            // Bullets Logic
+            bullets.forEach((b, index) => {
+                b.y -= b.speed;
+                // 子彈發光效果
+                ctx.save();
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = b.color;
+                ctx.fillStyle = b.color;
+                ctx.fillRect(b.x - b.w/2, b.y, b.w, b.h);
+                ctx.restore();
+
+                if(b.y < 0) bullets.splice(index, 1);
+            });
+
+            // Enemies Spawning
+            // 每 40 幀生成一個，比以前快 (以前是60)
+            if(frame % 40 === 0) {
+                const shapes = ['square', 'circle', 'triangle'];
+                const colors = ['#ff6b6b', '#feca57', '#ff9ff3']; // 紅, 黃, 粉
+                
+                const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                // 速度更快：基礎 4，隨機加 3 (以前是 2+2)
+                const randomSpeed = 4 + Math.random() * 3;
+
+                enemies.push({ 
+                    x: Math.random() * (canvas.width - 40) + 20, 
+                    y: -30, 
+                    size: Math.random() * 20 + 30, 
+                    speed: randomSpeed, 
+                    shape: randomShape,
+                    color: randomColor
+                });
+            }
+
+            // Enemies Logic
+            enemies.forEach((e, eIndex) => {
+                e.y += e.speed;
+                drawEnemy(e);
+
+                // 碰撞檢測：子彈擊中敵人
+                // 簡單矩形判定，為了對圓形公平，判定範圍縮小一點
+                bullets.forEach((b, bIndex) => {
+                    const hitDist = Math.abs(b.x - e.x);
+                    const hitY = Math.abs(b.y - e.y);
+                    
+                    if (hitDist < e.size/2 && hitY < e.size/2) {
+                        // 擊中特效 (簡單的爆炸圈)
+                        ctx.save();
+                        ctx.strokeStyle = e.color;
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(e.x, e.y, e.size, 0, Math.PI*2);
+                        ctx.stroke();
+                        ctx.restore();
+
+                        enemies.splice(eIndex, 1);
+                        bullets.splice(bIndex, 1);
+                        score += 10;
+                        document.getElementById('score').innerText = score;
+                    }
+                });
+
+                // 碰撞檢測：敵人撞到玩家
+                // 玩家判定範圍約為 30px 半徑
+                const playerDist = Math.sqrt(Math.pow(player.x - e.x, 2) + Math.pow(player.y - e.y, 2));
+                if (playerDist < 35) {
+                    gameOver();
+                }
+
+                if(e.y > canvas.height) enemies.splice(eIndex, 1);
+            });
+
+            frame++;
+            animationId = requestAnimationFrame(update);
+        }
+
+        function loop() {
+            update();
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            document.getElementById('final-score').innerText = score;
+            document.getElementById('game-over-screen').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
