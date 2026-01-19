@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🌸 花瓣收集</title>
+    <style>
+        body { 
+            margin: 0; 
+            /* 馬卡龍粉紫漸層背景 */
+            background: linear-gradient(to bottom, #a18cd1 0%, #fbc2eb 100%); 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            cursor: default; /* 預設顯示滑鼠，方便點擊按鈕 */
+        }
+        
+        canvas { 
+            display: block; 
+            /* 遊戲進行時才隱藏滑鼠 */
+        }
+        
+        /* 遊戲中的 Canvas 樣式 */
+        body.playing canvas {
+            cursor: none;
+        }
+
+        /* UI 分數 */
+        #ui { 
+            position: absolute; 
+            top: 30px; 
+            width: 100%; 
+            text-align: center; 
+            font-size: 2rem; 
+            font-weight: bold; 
+            color: white; 
+            text-shadow: 0 2px 10px rgba(255, 105, 180, 0.5);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* 開始/教學畫面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .content-card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 10px 40px rgba(161, 140, 209, 0.4);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        h1 { 
+            color: #ff6b81; 
+            margin-bottom: 10px; 
+            font-size: 2.5rem; 
+        }
+        
+        .tutorial-list {
+            text-align: left;
+            margin: 20px 0;
+            color: #555;
+            font-size: 1.1rem;
+            line-height: 2;
+        }
+
+        .tutorial-item { display: flex; align-items: center; margin-bottom: 10px; }
+        .icon { font-size: 1.5rem; margin-right: 15px; width: 30px; text-align: center; }
+        .desc { font-weight: 500; }
+
+        button {
+            background: linear-gradient(45deg, #ff9ff3, #f368e0);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(243, 104, 224, 0.4);
+            transition: transform 0.2s;
+            outline: none;
+        }
+        button:hover { transform: scale(1.05); }
+
+        /* Game Over 畫面 */
+        #game-over {
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%, -50%); 
+            text-align: center; 
+            color: white; 
+            text-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            display: none; 
+            z-index: 50;
+            pointer-events: auto; 
+        }
+
+        .btn-restart {
+            background: white;
+            color: #ff6b81;
+            margin-top: 15px;
+            display: inline-block;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .btn-restart:hover { transform: scale(1.1); }
+
+        .back-link { 
+            position: absolute; top: 20px; left: 20px; 
+            color: rgba(255,255,255,0.7); 
+            text-decoration: none; 
+            font-weight: bold; 
+            z-index: 20;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 分數顯示 -->
+    <div id="ui">分數: <span id="score">0</span></div>
+    
+    <!-- 返回按鈕 -->
+    <a href="index.html" class="back-link">← 返回</a>
+
+    <!-- 開始/教學畫面 -->
+    <div id="start-screen">
+        <div class="content-card">
+            <h1>🌸 花瓣收集</h1>
+            <p style="color: #888;">盡情享受春天的氣息吧！</p>
+            
+            <div class="tutorial-list">
+                <div class="tutorial-item">
+                    <span class="icon">👆</span>
+                    <span class="desc">移動滑鼠 (或手指) 控制籃子</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🌸</span>
+                    <span class="desc">接住粉紅色花瓣 (+1分)</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🪨</span>
+                    <span class="desc">小心灰色的石頭 (Game Over)</span>
+                </div>
+            </div>
+
+            <button onclick="startGame()">開始遊戲</button>
+        </div>
+    </div>
+
+    <!-- 遊戲結束畫面 -->
+    <div id="game-over">
+        <h2 style="font-size: 3rem; margin-bottom: 10px;">哎呀! 🥀</h2>
+        <p style="font-size: 1.5rem;">最終分數: <span id="finalScore" style="font-weight: bold;">0</span></p>
+        <a href="javascript:location.reload()" class="btn-restart">再玩一次</a>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let player = { x: canvas.width/2, y: canvas.height - 100, w: 70, h: 50 };
+        let items = []; 
+        let score = 0;
+        let gameRunning = false;
+        let speed = 3;
+
+        // Mouse Control
+        canvas.addEventListener('mousemove', (e) => {
+            if(gameRunning) {
+                player.x = e.clientX;
+                player.y = e.clientY;
+            }
+        });
+
+        // Touch Control
+        canvas.addEventListener('touchmove', (e) => {
+            if(gameRunning) {
+                e.preventDefault();
+                player.x = e.touches[0].clientX;
+                player.y = e.touches[0].clientY;
+            }
+        }, {passive: false});
+
+        function startGame() {
+            document.getElementById('start-screen').style.display = 'none';
+            document.body.classList.add('playing'); // 隱藏滑鼠
+            gameRunning = true;
+            update();
+        }
+
+        function spawnItem() {
+            const isRock = Math.random() > 0.75; // 25% 機率出現石頭，比以前難一點
+            items.push({
+                x: Math.random() * canvas.width,
+                y: -30,
+                size: Math.random() * 15 + 15, // 隨機大小
+                speed: Math.random() * 2 + speed,
+                type: isRock ? 'rock' : 'petal',
+                angle: 0,
+                rotSpeed: (Math.random() - 0.5) * 0.1 // 旋轉速度
+            });
+        }
+
+        function drawPlayer() {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            
+            // 繪製半透明籃子
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.beginPath();
+            ctx.arc(0, 0, 35, 0, Math.PI, false); // 下半圓
+            ctx.fill();
+            
+            // 籃子把手
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(0, -5, 35, Math.PI, 0, false);
+            ctx.stroke();
+
+            // 裝飾：蝴蝶結
+            ctx.fillStyle = '#ff9ff3';
+            ctx.beginPath();
+            ctx.ellipse(-15, -40, 10, 6, -0.5, 0, Math.PI*2);
+            ctx.ellipse(15, -40, 10, 6, 0.5, 0, Math.PI*2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(0, -40, 4, 0, Math.PI*2);
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function update() {
+            if(!gameRunning) return;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if(Math.random() < 0.06) spawnItem(); // 生成頻率
+
+            drawPlayer();
+
+            items.forEach((item, index) => {
+                item.y += item.speed;
+                item.angle += item.rotSpeed;
+
+                ctx.save();
+                ctx.translate(item.x, item.y);
+                ctx.rotate(item.angle);
+                
+                if(item.type === 'petal') {
+                    // 繪製花瓣 (橢圓形)
+                    ctx.fillStyle = '#ff6b81';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = '#ff6b81';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, item.size, item.size/2, 0, 0, Math.PI*2);
+                    ctx.fill();
+                } else {
+                    // 繪製石頭 (帶角的多邊形)
+                    ctx.fillStyle = '#95a5a6';
+                    ctx.shadowBlur = 5;
+                    ctx.shadowColor = 'black';
+                    ctx.beginPath();
+                    const s = item.size/1.5;
+                    ctx.moveTo(-s, -s); ctx.lineTo(s, -s);
+                    ctx.lineTo(s*1.2, 0); ctx.lineTo(s, s);
+                    ctx.lineTo(-s, s);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                // 碰撞檢測
+                const dx = player.x - item.x;
+                const dy = player.y - item.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const hitThreshold = 35 + item.size/2; // 籃子半徑 + 物品半徑
+
+                if(dist < hitThreshold) {
+                    if(item.type === 'petal') {
+                        score++;
+                        document.getElementById('score').innerText = score;
+                        items.splice(index, 1);
+                        // 每接住5個，速度微升
+                        if(score % 5 === 0) speed += 0.2;
+                    } else {
+                        // 撞到石頭
+                        gameRunning = false;
+                        document.getElementById('finalScore').innerText = score;
+                        document.getElementById('game-over').style.display = 'block';
+                        document.body.classList.remove('playing'); // 顯示滑鼠
+                    }
+                }
+
+                if(item.y > canvas.height) items.splice(index, 1);
+            });
+
+            requestAnimationFrame(update);
+        }
+    </script>
+</body>
+</html>
