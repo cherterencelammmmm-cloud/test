@@ -3,139 +3,620 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🎮 我的遊戲館</title>
-    <!-- 引入酷炫字體 -->
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Exo+2:wght@400;600&display=swap" rel="stylesheet">
+    <title>🎮 未來遊戲館 | Ultimate Edition</title>
+    <!-- 引入字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
+        :root {
+            /* 馬卡龍色系 */
+            --macaron-pink: #FFB7B2;
+            --macaron-blue: #A2E1DB;
+            --macaron-yellow: #FFF5BA;
+            --macaron-purple: #E0BBE4;
+            --macaron-green: #95E1D3;
+
+            /* iOS 風格變數 */
+            --glass-bg-dark: rgba(30, 30, 40, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            --neon-cyan: #00f3ff;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Noto Sans HK", sans-serif;
         }
 
         body {
-            font-family: 'Exo 2', sans-serif;
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             color: white;
             min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
             overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 背景 Canvas */
+        #bg-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.7;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- Header --- */
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: slideDown 0.8s ease-out;
         }
 
         h1 {
             font-family: 'Orbitron', sans-serif;
-            font-size: 3.2rem;
-            margin-bottom: 40px;
-            text-shadow: 0 0 15px rgba(0, 200, 255, 0.7);
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            letter-spacing: -1px;
+            font-weight: 800;
+            background: linear-gradient(180deg, #ffffff 0%, #d1d1d1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
+        }
+
+        .subtitle {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.6);
             letter-spacing: 2px;
-            animation: glow 2s infinite alternate;
+            font-weight: 500;
+            text-transform: uppercase;
         }
 
-        @keyframes glow {
-            from { text-shadow: 0 0 10px #fff, 0 0 20px #0ff, 0 0 30px #08f; }
-            to   { text-shadow: 0 0 15px #fff, 0 0 25px #0ff, 0 0 35px #08f, 0 0 45px #0af; }
+        /* --- 搜尋欄 --- */
+        .search-container {
+            position: relative;
+            margin: 0 auto 30px auto;
+            width: 100%;
+            max-width: 400px;
         }
 
-        .games {
+        #searchInput {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 50px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            color: white;
+            font-family: inherit;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        #searchInput::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        #searchInput:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        /* --- 控制區 (導航 + 幸運按鈕) --- */
+        .controls-area {
             display: flex;
-            flex-wrap: wrap;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .category-nav {
+            display: flex;
             justify-content: center;
-            gap: 30px;
-            max-width: 1000px;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn, #surpriseBtn {
+            /* iOS 玻璃按鈕基礎 */
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            
+            color: white;
+            padding: 10px 24px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            outline: none;
+        }
+
+        .filter-btn:hover, #surpriseBtn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: scale(1.02);
+        }
+
+        .filter-btn.active {
+            background: #ffffff; 
+            color: #000;
+            border-color: transparent;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+        }
+
+        /* 特定按鈕激活色 */
+        .filter-btn[data-filter="puzzle"].active { background: var(--macaron-pink); color: #4a2c2c; }
+        .filter-btn[data-filter="action"].active { background: var(--macaron-yellow); color: #4a4a2c; }
+        .filter-btn[data-filter="casual"].active { background: var(--macaron-blue); color: #2c4a4a; }
+
+        /* 幸運按鈕特別樣式 */
+        #surpriseBtn {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+            border: 1px dashed rgba(255,255,255,0.3);
+        }
+
+        /* --- 網格與卡片 --- */
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 25px;
+            perspective: 1000px; /* 為 3D Tilt 準備 */
         }
 
         .game-card {
-            position: relative;
-            width: 160px;
-            background: rgba(30, 30, 50, 0.7);
-            backdrop-filter: blur(8px);
-            border-radius: 16px;
-            padding: 25px 20px;
             text-decoration: none;
             color: white;
-            text-align: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 0;
+            overflow: hidden;
+            position: relative;
+            height: 240px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            
+            /* iOS 玻璃核心 */
+            background: var(--glass-bg-dark);
+            backdrop-filter: blur(30px) saturate(180%);
+            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+            
+            /* 移除 CSS hover transform，交給 JS Tilt 處理，只保留背景/邊框變化 */
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; 
+            animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
-        .game-card::before {
+        /* JS 操控 transform，CSS 不設定 hover transform，避免衝突 */
+        .game-card:hover {
+            background: rgba(45, 45, 60, 0.75);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 卡片反光層 */
+        .game-card::after {
             content: '';
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            border-radius: 16px;
-            background: linear-gradient(45deg, transparent, rgba(0, 200, 255, 0.2), transparent);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            top: 0; left: 0; right: 0; height: 50%;
+            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
+            pointer-events: none;
+            z-index: 0;
         }
 
-        .game-card:hover {
-            transform: translateY(-10px) scale(1.05);
-            box-shadow: 0 12px 30px rgba(0, 200, 255, 0.4);
-            background: rgba(40, 40, 70, 0.9);
-        }
-
-        .game-card:hover::before {
-            opacity: 1;
-        }
-
-        .icon {
-            font-size: 3em;
-            margin-bottom: 12px;
-            display: block;
-            transition: transform 0.3s ease;
-        }
-
-        .game-card:hover .icon {
-            transform: scale(1.2) rotate(5deg);
-        }
-
-        .game-card div:last-child {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.1rem;
-            font-weight: 600;
+        /* --- 標籤 Badge --- */
+        .badge {
+            position: absolute;
+            top: 15px;
+            right: -30px;
+            background: #ff4757;
+            color: white;
+            padding: 5px 30px;
+            transform: rotate(45deg);
+            font-size: 0.7rem;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 10;
             letter-spacing: 1px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .badge.hot { background: linear-gradient(45deg, #ff6b6b, #ff4757); }
+        .badge.new { background: linear-gradient(45deg, #48dbfb, #0abde3); right: -35px; }
+
+        .icon-box {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+            transition: transform 0.1s; /* 讓跟隨滑鼠的縮放更跟手 */
+            z-index: 1;
         }
 
-        /* 手機響應式 */
-        @media (max-width: 600px) {
-            h1 {
-                font-size: 2.2rem;
-            }
-            .game-card {
-                width: 130px;
-                padding: 20px 15px;
-            }
-            .icon {
-                font-size: 2.4em;
-            }
+        .game-info { z-index: 1; text-align: center; }
+
+        .game-title {
+            font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; letter-spacing: 0.5px;
+        }
+
+        .game-cat {
+            font-size: 0.8rem; font-weight: 500;
+            color: rgba(255, 255, 255, 0.55);
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px; border-radius: 12px;
+        }
+
+        .bg-blob {
+            position: absolute; width: 120px; height: 120px;
+            border-radius: 50%; filter: blur(40px); opacity: 0.4; z-index: 0;
+            top: 50%; left: 50%; transform: translate(-50%, -50%);
+            transition: opacity 0.3s;
+        }
+        
+        .game-card[data-category="puzzle"] .bg-blob { background: var(--macaron-pink); }
+        .game-card[data-category="action"] .bg-blob { background: var(--macaron-yellow); }
+        .game-card[data-category="casual"] .bg-blob { background: var(--macaron-blue); }
+
+        footer {
+            text-align: center; margin-top: 60px; color: rgba(255, 255, 255, 0.3); font-size: 0.85rem; padding-bottom: 20px;
+        }
+
+        /* 動畫 */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes slideDown { from { transform: translateY(-30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .hidden { display: none; }
+
+        /* RWD */
+        @media (max-width: 768px) {
+            .games-grid { grid-template-columns: repeat(2, 1fr); }
+            h1 { font-size: 2.5rem; }
+            .game-card { height: 200px; border-radius: 20px; }
+        }
+        @media (max-width: 480px) {
+            .games-grid { grid-template-columns: 1fr; }
+            .category-nav { gap: 8px; }
+            .filter-btn, #surpriseBtn { padding: 8px 16px; font-size: 0.8rem; }
         }
     </style>
 </head>
 <body>
-    <h1>🎮 我的遊戲館</h1>
-    <div class="games">
-        <a href="2048game.html" class="game-card">
-            <div class="icon">🧩</div>
-            <div>2048遊戲</div>
-        </a>
-        <a href="snake.html" class="game-card">
-            <div class="icon">🐍</div>
-            <div>貪食蛇</div>
-        </a>
-        <a href="cat.html" class="game-card">
-            <div class="icon">🐈</div>
-            <div>小貓跳毒菇</div>
-        </a>
-        <!-- 可繼續添加更多遊戲 -->
+
+    <canvas id="bg-canvas"></canvas>
+
+    <div class="container">
+        <header>
+            <h1>GAMES</h1>
+            <div class="subtitle">Select Your Experience</div>
+        </header>
+
+        <!-- 搜尋欄 -->
+        <div class="search-container">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="搜尋遊戲..." autocomplete="off" />
+        </div>
+
+        <!-- 控制區 -->
+        <div class="controls-area">
+            <nav class="category-nav">
+                <button class="filter-btn active" data-filter="all">全部</button>
+                <button class="filter-btn" data-filter="puzzle">益智</button>
+                <button class="filter-btn" data-filter="action">動作</button>
+                <button class="filter-btn" data-filter="casual">休閒</button>
+            </nav>
+            <button id="surpriseBtn">🎲 幫我選</button>
+        </div>
+
+        <main class="games-grid">
+            <!-- Puzzle: 2048 -->
+            <a href="2048game.html" class="game-card" data-category="puzzle">
+                <div class="badge hot">HOT</div>
+                <div class="bg-blob"></div>
+                <div class="icon-box">🧩</div>
+                <div class="game-info">
+                    <div class="game-title">2048 合成</div>
+                    <div class="game-cat">Puzzle</div>
+                </div>
+            </a>
+
+            <!-- Action: Snake -->
+            <a href="snake.html" class="game-card" data-category="action">
+                <div class="bg-blob"></div>
+                <div class="icon-box">🐍</div>
+                <div class="game-info">
+                    <div class="game-title">極速貪食蛇</div>
+                    <div class="game-cat">Action</div>
+                </div>
+            </a>
+
+            <!-- Casual: Cat -->
+            <a href="cat.html" class="game-card" data-category="casual">
+                <div class="badge new">NEW</div>
+                <div class="bg-blob"></div>
+                <div class="icon-box">🐈</div>
+                <div class="game-info">
+                    <div class="game-title">毒菇跳躍</div>
+                    <div class="game-cat">Casual</div>
+                </div>
+            </a>
+
+            <!-- Extra: Puzzle -->
+            <a href="#" class="game-card" data-category="puzzle">
+                <div class="bg-blob"></div>
+                <div class="icon-box">⚡</div>
+                <div class="game-info">
+                    <div class="game-title">反應測試</div>
+                    <div class="game-cat">Puzzle</div>
+                </div>
+            </a>
+
+            <!-- Extra: Action -->
+            <a href="#" class="game-card" data-category="action">
+                <div class="bg-blob"></div>
+                <div class="icon-box">🚀</div>
+                <div class="game-info">
+                    <div class="game-title">太空防衛</div>
+                    <div class="game-cat">Action</div>
+                </div>
+            </a>
+
+            <!-- Extra: Casual -->
+            <a href="#" class="game-card" data-category="casual">
+                <div class="bg-blob"></div>
+                <div class="icon-box">🌸</div>
+                <div class="game-info">
+                    <div class="game-title">花瓣收集</div>
+                    <div class="game-cat">Casual</div>
+                </div>
+            </a>
+            
+            <a href="#" class="game-card" data-category="action">
+                <div class="bg-blob"></div>
+                <div class="icon-box">🥊</div>
+                <div class="game-info">
+                    <div class="game-title">機器人決鬥</div>
+                    <div class="game-cat">Action</div>
+                </div>
+            </a>
+
+            <a href="#" class="game-card" data-category="casual">
+                <div class="bg-blob"></div>
+                <div class="icon-box">🎵</div>
+                <div class="game-info">
+                    <div class="game-title">節奏大師</div>
+                    <div class="game-cat">Casual</div>
+                </div>
+            </a>
+        </main>
+
+        <footer>
+            &copy; 2023 Ultimate Game Hub Design
+        </footer>
     </div>
+
+    <script>
+        // --- 1. Canvas 背景動畫 ---
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        let particlesArray;
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            init();
+        });
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 1;
+                this.speedX = Math.random() * 0.8 - 0.4;
+                this.speedY = Math.random() * 0.8 - 0.4;
+                const colors = ['#FFB7B2', '#A2E1DB', '#FFF5BA', '#E0BBE4', '#ffffff']; 
+                this.color = colors[Math.floor(Math.random() * colors.length)];
+            }
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if (this.x > canvas.width || this.x < 0) this.speedX = -this.speedX;
+                if (this.y > canvas.height || this.y < 0) this.speedY = -this.speedY;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function init() {
+            particlesArray = [];
+            const numberOfParticles = (canvas.width * canvas.height) / 9000;
+            for (let i = 0; i < numberOfParticles; i++) {
+                particlesArray.push(new Particle());
+            }
+        }
+
+        function connect() {
+            let opacityValue = 1;
+            for (let a = 0; a < particlesArray.length; a++) {
+                for (let b = a; b < particlesArray.length; b++) {
+                    let distance = ((particlesArray[a].x - particlesArray[b].x) * (particlesArray[a].x - particlesArray[b].x)) + 
+                                   ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
+                    if (distance < (canvas.width/7) * (canvas.height/7)) {
+                        opacityValue = 1 - (distance/20000);
+                        ctx.strokeStyle = 'rgba(255, 255, 255,' + opacityValue * 0.15 + ')';
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+                        ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = 0; i < particlesArray.length; i++) {
+                particlesArray[i].update();
+                particlesArray[i].draw();
+            }
+            connect();
+        }
+
+        init();
+        animate();
+
+        // --- 2. 分類篩選邏輯 ---
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const gameCards = document.querySelectorAll('.game-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filterValue = btn.getAttribute('data-filter');
+                applyFilter(filterValue);
+            });
+        });
+
+        function applyFilter(category) {
+            gameCards.forEach(card => {
+                card.style.animation = 'none';
+                card.offsetHeight; 
+                if (category === 'all' || card.getAttribute('data-category') === category) {
+                    card.classList.remove('hidden');
+                    card.style.animation = 'fadeIn 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) forwards';
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+
+        // --- 3. 搜尋功能 ---
+        const searchInput = document.getElementById('searchInput');
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            let hasResult = false;
+
+            gameCards.forEach(card => {
+                const title = card.querySelector('.game-title').textContent.toLowerCase();
+                const cat = card.querySelector('.game-cat').textContent.toLowerCase();
+                
+                if (title.includes(term) || cat.includes(term)) {
+                    card.classList.remove('hidden');
+                    card.style.animation = 'fadeIn 0.5s ease forwards';
+                    hasResult = true;
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+            
+            // 如果有搜尋字，可以選擇性取消分類按鈕的 active 狀態 (視覺上)
+            if (term.length > 0) {
+                filterBtns.forEach(b => b.classList.remove('active'));
+            } else if (term.length === 0) {
+                // 如果清空搜尋，恢復預設 active
+                document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
+            }
+        });
+
+        // --- 4. 3D Tilt 效果 ---
+        gameCards.forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left; 
+                const y = e.clientY - rect.top;  
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                // 限制最大旋轉角度為 10度
+                const rotateX = ((y - centerY) / centerY) * -10; 
+                const rotateY = ((x - centerX) / centerX) * 10;
+
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
+            });
+
+            // 滑鼠離開復原
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
+            });
+            
+            // 觸碰設備支援 (點擊時稍微回彈)
+            card.addEventListener('touchstart', () => {
+                 card.style.transform = 'scale(0.95)';
+            });
+            card.addEventListener('touchend', () => {
+                 card.style.transform = 'scale(1)';
+            });
+        });
+
+        // --- 5. 幸運大轉盤 (幫我選) ---
+        document.getElementById('surpriseBtn').addEventListener('click', () => {
+            // 1. 找出目前可見的卡片 (沒有被 hidden 的)
+            const visibleCards = Array.from(document.querySelectorAll('.game-card')).filter(c => !c.classList.contains('hidden'));
+            
+            if (visibleCards.length === 0) return;
+
+            // 2. 隨機選一個
+            const randomCard = visibleCards[Math.floor(Math.random() * visibleCards.length)];
+            
+            // 3. 滾動到該位置
+            randomCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 4. 高亮動畫效果
+            randomCard.style.animation = 'none';
+            randomCard.offsetHeight; 
+            
+            // 閃爍特效
+            let count = 0;
+            const flashInterval = setInterval(() => {
+                randomCard.style.transform = count % 2 === 0 ? 'scale(1.1) rotate(2deg)' : 'scale(1)';
+                randomCard.style.boxShadow = count % 2 === 0 ? '0 0 40px var(--neon-cyan), inset 0 0 20px white' : '';
+                randomCard.style.borderColor = count % 2 === 0 ? 'white' : '';
+                count++;
+                if (count > 5) {
+                    clearInterval(flashInterval);
+                    // 恢復原狀 (清除 inline style)
+                    setTimeout(() => {
+                        randomCard.style.transform = '';
+                        randomCard.style.boxShadow = '';
+                        randomCard.style.borderColor = '';
+                    }, 200);
+                }
+            }, 150);
+        });
+
+    </script>
 </body>
 </html>
