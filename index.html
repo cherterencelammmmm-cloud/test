@@ -8,18 +8,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* 馬卡龍色系 */
+            /* 馬卡龍色系 (保持不變，但用於裝飾) */
             --macaron-pink: #FFB7B2;
             --macaron-blue: #A2E1DB;
             --macaron-yellow: #FFF5BA;
             --macaron-purple: #E0BBE4;
             --macaron-green: #95E1D3;
 
-            /* iOS 風格變數 */
-            --glass-bg-dark: rgba(30, 30, 40, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-            --neon-cyan: #00f3ff;
+            /* 調整為適合淺色背景的變數 */
+            --glass-bg-light: rgba(255, 255, 255, 0.55); /* 淺色磨砂背景 */
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --neon-blue: #007aff; /* 改為深一點的藍色以對應淺底 */
+            
+            /* 主要文字顏色 */
+            --text-main: #2c3e50;
+            --text-sub: #5f6c7b;
         }
 
         * {
@@ -30,8 +34,9 @@
         }
 
         body {
-            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-            color: white;
+            /* --- 修改 1: 背景改為漸層淺藍色 --- */
+            background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%);
+            color: var(--text-main);
             min-height: 100vh;
             overflow-x: hidden;
             position: relative;
@@ -45,7 +50,7 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            opacity: 0.7;
+            opacity: 0.6; /*稍微降低粒子濃度以免干擾淺色背景*/
         }
 
         .container {
@@ -68,18 +73,19 @@
             font-size: 3.5rem;
             margin-bottom: 10px;
             letter-spacing: -1px;
-            font-weight: 800;
-            background: linear-gradient(180deg, #ffffff 0%, #d1d1d1 100%);
+            font-weight: 900;
+            /* 文字改為深色漸層 */
+            background: linear-gradient(180deg, #005c97 0%, #363795 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
+            filter: drop-shadow(0 4px 15px rgba(0, 100, 255, 0.2));
         }
 
         .subtitle {
             font-size: 1rem;
-            color: rgba(255, 255, 255, 0.6);
+            color: rgba(44, 62, 80, 0.6); /* 深灰 */
             letter-spacing: 2px;
-            font-weight: 500;
+            font-weight: 600;
             text-transform: uppercase;
         }
 
@@ -95,23 +101,24 @@
             width: 100%;
             padding: 12px 20px 12px 45px;
             border-radius: 50px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            /* 淺色輸入框背景 */
+            background: rgba(255, 255, 255, 0.6);
+            color: var(--text-main);
             font-family: inherit;
             outline: none;
             transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
         }
 
         #searchInput::placeholder {
-            color: rgba(255, 255, 255, 0.5);
+            color: rgba(44, 62, 80, 0.4);
         }
 
         #searchInput:focus {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: var(--neon-cyan);
-            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            background: rgba(255, 255, 255, 0.9);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 122, 255, 0.2);
         }
 
         .search-icon {
@@ -119,7 +126,7 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            opacity: 0.7;
+            opacity: 0.6;
             pointer-events: none;
         }
 
@@ -140,148 +147,162 @@
         }
 
         .filter-btn, #surpriseBtn {
-            /* iOS 玻璃按鈕基礎 */
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            /* 按鈕改為白色玻璃風格 */
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.6);
             
-            color: white;
+            color: var(--text-main);
             padding: 10px 24px;
             border-radius: 50px;
             cursor: pointer;
             font-size: 0.9rem;
-            font-weight: 600;
+            font-weight: 700;
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
             outline: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
         .filter-btn:hover, #surpriseBtn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.7);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.1);
         }
 
         .filter-btn.active {
-            background: #ffffff; 
-            color: #000;
+            background: #2c3e50; /* 激活狀態變深色 */
+            color: white;
             border-color: transparent;
-            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(44, 62, 80, 0.3);
         }
-
-        /* 特定按鈕激活色 */
-        .filter-btn[data-filter="puzzle"].active { background: var(--macaron-pink); color: #4a2c2c; }
-        .filter-btn[data-filter="action"].active { background: var(--macaron-yellow); color: #4a4a2c; }
-        .filter-btn[data-filter="casual"].active { background: var(--macaron-blue); color: #2c4a4a; }
 
         /* 幸運按鈕特別樣式 */
         #surpriseBtn {
-            background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-            border: 1px dashed rgba(255,255,255,0.3);
+            background: linear-gradient(135deg, rgba(255,255,255,0.5), rgba(255,255,255,0.3));
+            border: 1px dashed rgba(44, 62, 80, 0.3);
         }
 
         /* --- 網格與卡片 --- */
         .games-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             gap: 25px;
-            perspective: 1000px; /* 為 3D Tilt 準備 */
+            perspective: 1000px;
         }
 
         .game-card {
             text-decoration: none;
-            color: white;
+            color: var(--text-main);
             border-radius: 24px;
-            padding: 0;
+            padding: 25px 20px;
             overflow: hidden;
             position: relative;
-            height: 240px;
+            /* --- 修改 2: 卡片高度增加以容納描述 --- */
+            min-height: 300px; 
+            height: auto;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between; /* 內容分散對齊 */
             
-            /* iOS 玻璃核心 */
-            background: var(--glass-bg-dark);
-            backdrop-filter: blur(30px) saturate(180%);
-            -webkit-backdrop-filter: blur(30px) saturate(180%);
+            /* 卡片改為淺色玻璃 */
+            background: var(--glass-bg-light);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border: 1px solid var(--glass-border);
             box-shadow: var(--glass-shadow);
             
-            /* 移除 CSS hover transform，交給 JS Tilt 處理，只保留背景/邊框變化 */
             transition: background 0.3s, border-color 0.3s, box-shadow 0.3s; 
             animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
         }
 
-        /* JS 操控 transform，CSS 不設定 hover transform，避免衝突 */
         .game-card:hover {
-            background: rgba(45, 45, 60, 0.75);
-            border-color: rgba(255, 255, 255, 0.3);
-            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+            background: rgba(255, 255, 255, 0.8);
+            border-color: #fff;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
         }
 
-        /* 卡片反光層 */
-        .game-card::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; height: 50%;
-            background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 100%);
-            pointer-events: none;
-            z-index: 0;
+        /* 卡片背景裝飾 Blob - 調整透明度適合淺色 */
+        .bg-blob {
+            position: absolute; width: 140px; height: 140px;
+            border-radius: 50%; filter: blur(50px); opacity: 0.6; z-index: 0;
+            top: 40px; left: 50%; transform: translateX(-50%);
         }
+        .game-card[data-category="puzzle"] .bg-blob { background: var(--macaron-pink); }
+        .game-card[data-category="action"] .bg-blob { background: var(--macaron-yellow); }
+        .game-card[data-category="casual"] .bg-blob { background: var(--macaron-blue); }
 
-        /* --- 標籤 Badge --- */
+        /* Badge 標籤 */
         .badge {
             position: absolute;
             top: 15px;
             right: -30px;
-            background: #ff4757;
+            background: #ff6b6b;
             color: white;
             padding: 5px 30px;
             transform: rotate(45deg);
             font-size: 0.7rem;
             font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
             z-index: 10;
-            letter-spacing: 1px;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
-        .badge.hot { background: linear-gradient(45deg, #ff6b6b, #ff4757); }
+        .badge.hot { background: linear-gradient(45deg, #ff6b6b, #ee5253); }
         .badge.new { background: linear-gradient(45deg, #48dbfb, #0abde3); right: -35px; }
 
+        /* Icon Box */
         .icon-box {
             font-size: 3.5rem;
             margin-bottom: 15px;
-            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
-            transition: transform 0.1s; /* 讓跟隨滑鼠的縮放更跟手 */
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.1));
             z-index: 1;
+            transition: transform 0.1s; 
         }
 
-        .game-info { z-index: 1; text-align: center; }
+        /* Game Info 文字區塊 */
+        .game-info { 
+            z-index: 1; 
+            text-align: center; 
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
         .game-title {
-            font-weight: 700; font-size: 1.15rem; margin-bottom: 4px; letter-spacing: 0.5px;
+            font-weight: 800; 
+            font-size: 1.25rem; 
+            margin-bottom: 6px; 
+            letter-spacing: 0.5px;
+            color: #2d3436;
         }
 
         .game-cat {
-            font-size: 0.8rem; font-weight: 500;
-            color: rgba(255, 255, 255, 0.55);
-            background: rgba(0,0,0,0.2);
-            padding: 4px 10px; border-radius: 12px;
+            font-size: 0.75rem; 
+            font-weight: 700;
+            color: #636e72;
+            background: rgba(255,255,255,0.7);
+            padding: 4px 12px; 
+            border-radius: 20px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            border: 1px solid rgba(0,0,0,0.05);
         }
 
-        .bg-blob {
-            position: absolute; width: 120px; height: 120px;
-            border-radius: 50%; filter: blur(40px); opacity: 0.4; z-index: 0;
-            top: 50%; left: 50%; transform: translate(-50%, -50%);
-            transition: opacity 0.3s;
+        /* --- 修改 3: 新增描述樣式 --- */
+        .game-desc {
+            font-size: 0.85rem;
+            color: #636e72;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 3; /* 限制最多3行 */
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-top: auto; /* 推到底部 */
         }
-        
-        .game-card[data-category="puzzle"] .bg-blob { background: var(--macaron-pink); }
-        .game-card[data-category="action"] .bg-blob { background: var(--macaron-yellow); }
-        .game-card[data-category="casual"] .bg-blob { background: var(--macaron-blue); }
 
         footer {
-            text-align: center; margin-top: 60px; color: rgba(255, 255, 255, 0.3); font-size: 0.85rem; padding-bottom: 20px;
+            text-align: center; margin-top: 60px; color: rgba(44, 62, 80, 0.5); font-size: 0.85rem; padding-bottom: 20px;
         }
 
         /* 動畫 */
@@ -293,7 +314,7 @@
         @media (max-width: 768px) {
             .games-grid { grid-template-columns: repeat(2, 1fr); }
             h1 { font-size: 2.5rem; }
-            .game-card { height: 200px; border-radius: 20px; }
+            .game-card { min-height: 280px; padding: 20px 15px; }
         }
         @media (max-width: 480px) {
             .games-grid { grid-template-columns: 1fr; }
@@ -330,7 +351,7 @@
         </div>
 
         <main class="games-grid">
-            <!-- Puzzle: 2048 -->
+            <!-- Puzzle: 2048 (Category: Puzzle) -->
             <a href="2048game.html" class="game-card" data-category="puzzle">
                 <div class="badge hot">HOT</div>
                 <div class="bg-blob"></div>
@@ -338,20 +359,23 @@
                 <div class="game-info">
                     <div class="game-title">2048 合成</div>
                     <div class="game-cat">Puzzle</div>
+                    <!-- 新增描述 -->
+                    <div class="game-desc">經典的數字合成遊戲，運用策略將相同數字的方塊合併，挑戰達成 2048 的高分目標！</div>
                 </div>
             </a>
 
-            <!-- Action: Snake -->
+            <!-- Action: Snake (Category: Action) -->
             <a href="snake.html" class="game-card" data-category="action">
                 <div class="bg-blob"></div>
                 <div class="icon-box">🐍</div>
                 <div class="game-info">
                     <div class="game-title">極速貪食蛇</div>
                     <div class="game-cat">Action</div>
+                    <div class="game-desc">控制小蛇不斷進食變長，小心不要撞到牆壁或自己的尾巴！速度會越來越快。</div>
                 </div>
             </a>
 
-            <!-- Casual: Cat -->
+            <!-- Casual: Cat (Category: Casual) -->
             <a href="paper.html" class="game-card" data-category="casual">
                 <div class="badge new">NEW</div>
                 <div class="bg-blob"></div>
@@ -359,45 +383,51 @@
                 <div class="game-info">
                     <div class="game-title">包剪揼</div>
                     <div class="game-cat">Casual</div>
+                    <div class="game-desc">最簡單的博弈遊戲，與電腦進行剪刀石頭布對決，測測今天的運氣如何。</div>
                 </div>
             </a>
 
-            <!-- Extra: Puzzle -->
-            <a href="reaction.html" class="game-card" data-category="puzzle">
+            <!-- Casual: Reaction (Moved to Casual) -->
+            <a href="reaction.html" class="game-card" data-category="casual">
                 <div class="bg-blob"></div>
                 <div class="icon-box">⚡</div>
                 <div class="game-info">
                     <div class="game-title">反應測試</div>
-                    <div class="game-cat">Puzzle</div>
+                    <div class="game-cat">Casual</div>
+                    <div class="game-desc">看到信號立即點擊！精確到毫秒級的反應時間測試，看看誰的神經反射最快。</div>
                 </div>
             </a>
 
-            <!-- Extra: Action -->
+            <!-- Action: Space (Category: Action) -->
             <a href="space.html" class="game-card" data-category="action">
                 <div class="bg-blob"></div>
                 <div class="icon-box">🚀</div>
                 <div class="game-info">
                     <div class="game-title">太空防衛</div>
                     <div class="game-cat">Action</div>
+                    <div class="game-desc">駕駛戰機保衛地球，迎擊不斷襲來的外星艦隊，體驗緊張刺激的太空射擊。</div>
                 </div>
             </a>
 
-            <!-- Extra: Casual -->
+            <!-- Casual: Petals (Category: Casual) -->
             <a href="petals.html" class="game-card" data-category="casual">
                 <div class="bg-blob"></div>
                 <div class="icon-box">🌸</div>
                 <div class="game-info">
                     <div class="game-title">花瓣收集</div>
                     <div class="game-cat">Casual</div>
+                    <div class="game-desc">放鬆心情的小遊戲，跟著節奏點擊花瓣，享受寧靜的視覺與操作體驗。</div>
                 </div>
             </a>
             
+            <!-- Action: Robot (Category: Action) -->
             <a href="robot.html" class="game-card" data-category="action">
                 <div class="bg-blob"></div>
                 <div class="icon-box">🥊</div>
                 <div class="game-info">
                     <div class="game-title">機器人決鬥</div>
                     <div class="game-cat">Action</div>
+                    <div class="game-desc">操作你的戰鬥機甲，在擂台上與對手展開激烈的格鬥，成為最強機甲師。</div>
                 </div>
             </a>
     </main>
@@ -407,7 +437,7 @@
     </div>
 
     <script>
-        // --- 1. Canvas 背景動畫 ---
+        // --- 1. Canvas 背景動畫 (顏色微調以適應淺色背景) ---
         const canvas = document.getElementById('bg-canvas');
         const ctx = canvas.getContext('2d');
         let particlesArray;
@@ -425,10 +455,11 @@
             constructor() {
                 this.x = Math.random() * canvas.width;
                 this.y = Math.random() * canvas.height;
-                this.size = Math.random() * 2 + 1;
-                this.speedX = Math.random() * 0.8 - 0.4;
-                this.speedY = Math.random() * 0.8 - 0.4;
-                const colors = ['#FFB7B2', '#A2E1DB', '#FFF5BA', '#E0BBE4', '#ffffff']; 
+                this.size = Math.random() * 2.5 + 1;
+                this.speedX = Math.random() * 0.6 - 0.3;
+                this.speedY = Math.random() * 0.6 - 0.3;
+                // 使用稍微深一點的顏色，使其在淺藍背景上可見
+                const colors = ['#FFB7B2', '#A2E1DB', '#74b9ff', '#a29bfe', '#ffffff']; 
                 this.color = colors[Math.floor(Math.random() * colors.length)];
             }
             update() {
@@ -461,7 +492,8 @@
                                    ((particlesArray[a].y - particlesArray[b].y) * (particlesArray[a].y - particlesArray[b].y));
                     if (distance < (canvas.width/7) * (canvas.height/7)) {
                         opacityValue = 1 - (distance/20000);
-                        ctx.strokeStyle = 'rgba(255, 255, 255,' + opacityValue * 0.15 + ')';
+                        // 連線顏色改為深藍灰色，適合淺色背景
+                        ctx.strokeStyle = 'rgba(44, 62, 80,' + opacityValue * 0.15 + ')'; 
                         ctx.lineWidth = 1;
                         ctx.beginPath();
                         ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
@@ -511,7 +543,7 @@
             });
         }
 
-        // --- 3. 搜尋功能 ---
+        // --- 3. 搜尋功能 (包含搜尋 Description) ---
         const searchInput = document.getElementById('searchInput');
 
         searchInput.addEventListener('input', (e) => {
@@ -521,8 +553,9 @@
             gameCards.forEach(card => {
                 const title = card.querySelector('.game-title').textContent.toLowerCase();
                 const cat = card.querySelector('.game-cat').textContent.toLowerCase();
+                const desc = card.querySelector('.game-desc').textContent.toLowerCase(); // 加入描述搜尋
                 
-                if (title.includes(term) || cat.includes(term)) {
+                if (title.includes(term) || cat.includes(term) || desc.includes(term)) {
                     card.classList.remove('hidden');
                     card.style.animation = 'fadeIn 0.5s ease forwards';
                     hasResult = true;
@@ -531,11 +564,9 @@
                 }
             });
             
-            // 如果有搜尋字，可以選擇性取消分類按鈕的 active 狀態 (視覺上)
             if (term.length > 0) {
                 filterBtns.forEach(b => b.classList.remove('active'));
             } else if (term.length === 0) {
-                // 如果清空搜尋，恢復預設 active
                 document.querySelector('.filter-btn[data-filter="all"]').classList.add('active');
             }
         });
@@ -550,19 +581,16 @@
                 const centerX = rect.width / 2;
                 const centerY = rect.height / 2;
                 
-                // 限制最大旋轉角度為 10度
                 const rotateX = ((y - centerY) / centerY) * -10; 
                 const rotateY = ((x - centerX) / centerX) * 10;
 
                 card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.05)`;
             });
 
-            // 滑鼠離開復原
             card.addEventListener('mouseleave', () => {
                 card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale(1)';
             });
             
-            // 觸碰設備支援 (點擊時稍微回彈)
             card.addEventListener('touchstart', () => {
                  card.style.transform = 'scale(0.95)';
             });
@@ -573,31 +601,26 @@
 
         // --- 5. 幸運大轉盤 (幫我選) ---
         document.getElementById('surpriseBtn').addEventListener('click', () => {
-            // 1. 找出目前可見的卡片 (沒有被 hidden 的)
             const visibleCards = Array.from(document.querySelectorAll('.game-card')).filter(c => !c.classList.contains('hidden'));
             
             if (visibleCards.length === 0) return;
 
-            // 2. 隨機選一個
             const randomCard = visibleCards[Math.floor(Math.random() * visibleCards.length)];
             
-            // 3. 滾動到該位置
             randomCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // 4. 高亮動畫效果
             randomCard.style.animation = 'none';
             randomCard.offsetHeight; 
             
-            // 閃爍特效
+            // 高亮動畫效果 (調整為適合淺色背景的陰影)
             let count = 0;
             const flashInterval = setInterval(() => {
                 randomCard.style.transform = count % 2 === 0 ? 'scale(1.1) rotate(2deg)' : 'scale(1)';
-                randomCard.style.boxShadow = count % 2 === 0 ? '0 0 40px var(--neon-cyan), inset 0 0 20px white' : '';
-                randomCard.style.borderColor = count % 2 === 0 ? 'white' : '';
+                randomCard.style.boxShadow = count % 2 === 0 ? '0 0 50px var(--neon-blue), inset 0 0 20px rgba(255,255,255,0.8)' : '';
+                randomCard.style.borderColor = count % 2 === 0 ? '#fff' : '';
                 count++;
                 if (count > 5) {
                     clearInterval(flashInterval);
-                    // 恢復原狀 (清除 inline style)
                     setTimeout(() => {
                         randomCard.style.transform = '';
                         randomCard.style.boxShadow = '';
