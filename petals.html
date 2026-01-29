@@ -24,17 +24,100 @@
         }
 
         /* UI 分數 */
-        #ui { 
-            position: absolute; 
-            top: 30px; 
-            width: 100%; 
-            text-align: center; 
-            font-size: 2rem; 
-            font-weight: bold; 
-            color: white; 
+        #ui {
+            position: absolute;
+            top: 30px;
+            width: 100%;
+            text-align: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
             text-shadow: 0 2px 10px rgba(255, 105, 180, 0.5);
             pointer-events: none;
             z-index: 10;
+        }
+
+        /* 進度條 */
+        #progress-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 5;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, #ff6b81, #a18cd1);
+            transition: width 0.3s ease;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 控制按鈕 */
+        #control-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            background: white;
+        }
+
+        /* 連擊顯示 */
+        #combo-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 4rem;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: opacity 0.3s;
+        }
+
+        /* 分數彈出動畫 */
+        .score-popup {
+            position: absolute;
+            color: #ff6b81;
+            font-weight: bold;
+            font-size: 1.8rem;
+            pointer-events: none;
+            opacity: 0;
+            animation: scorePop 1s forwards;
+            z-index: 12;
+        }
+
+        @keyframes scorePop {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-60px) scale(1.5); opacity: 0; }
         }
 
         /* 開始/教學畫面 */
@@ -138,8 +221,21 @@
 </head>
 <body>
 
+    <!-- 進度條 -->
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
     <!-- 分數顯示 -->
-    <div id="ui">分數: <span id="score">0</span></div>
+    <div id="ui">分數: <span id="score">0</span> | 時間: <span id="time">60</span>s | 連擊: <span id="combo">0</span></div>
+    
+    <!-- 控制面板 -->
+    <div id="control-panel">
+        <button class="control-btn" id="pauseBtn" title="暫停">⏸️</button>
+    </div>
+
+    <!-- 連擊顯示 -->
+    <div id="combo-display"></div>
     
     <!-- 返回按鈕 -->
     <a href="index.html" class="back-link">← 返回</a>
@@ -184,46 +280,124 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // 遊戲狀態
         let player = { x: canvas.width/2, y: canvas.height - 100, w: 70, h: 50 };
-        let items = []; 
+        let items = [];
         let score = 0;
         let gameRunning = false;
         let speed = 3;
+        let timeLeft = 60; // 60秒時間限制
+        let combo = 0;
+        let lastCatchTime = 0;
+        let comboTimeout = null;
+        let gameLoopId = null;
+        let isPaused = false;
 
-        // Mouse Control
+        // DOM 元素
+        const scoreElement = document.getElementById('score');
+        const timeElement = document.getElementById('time');
+        const comboElement = document.getElementById('combo');
+        const progressBar = document.getElementById('progress-bar');
+        const comboDisplay = document.getElementById('combo-display');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const finalScoreElement = document.getElementById('finalScore');
+
+        // 鼠標控制
         canvas.addEventListener('mousemove', (e) => {
-            if(gameRunning) {
+            if(gameRunning && !isPaused) {
                 player.x = e.clientX;
                 player.y = e.clientY;
             }
         });
 
-        // Touch Control
+        // 觸控控制
         canvas.addEventListener('touchmove', (e) => {
-            if(gameRunning) {
+            if(gameRunning && !isPaused) {
                 e.preventDefault();
                 player.x = e.touches[0].clientX;
                 player.y = e.touches[0].clientY;
             }
         }, {passive: false});
 
+        // 暫停按鈕
+        pauseBtn.addEventListener('click', togglePause);
+
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
-            document.body.classList.add('playing'); // 隱藏滑鼠
+            document.body.classList.add('playing');
+            
+            // 重置遊戲狀態
+            score = 0;
+            timeLeft = 60;
+            combo = 0;
+            speed = 3;
+            items = [];
+            player.x = canvas.width/2;
+            player.y = canvas.height - 100;
+            
+            // 更新UI
+            scoreElement.innerText = score;
+            timeElement.innerText = timeLeft;
+            comboElement.innerText = combo;
+            progressBar.style.width = '100%';
+            
             gameRunning = true;
-            update();
+            isPaused = false;
+            pauseBtn.innerHTML = '⏸️';
+            
+            // 開始遊戲循環
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
+            gameLoop();
+            
+            // 開始計時器
+            startTimer();
+        }
+
+        function startTimer() {
+            const timer = setInterval(() => {
+                if (!gameRunning || isPaused) return;
+                
+                timeLeft--;
+                timeElement.innerText = timeLeft;
+                progressBar.style.width = (timeLeft / 60 * 100) + '%';
+                
+                // 時間警告
+                if (timeLeft <= 10) {
+                    progressBar.style.background = 'linear-gradient(90deg, #ff4757, #ff6b81)';
+                    timeElement.style.color = '#ff4757';
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    gameOver();
+                }
+            }, 1000);
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            
+            isPaused = !isPaused;
+            if (isPaused) {
+                pauseBtn.innerHTML = '▶️';
+                document.body.classList.remove('playing');
+            } else {
+                pauseBtn.innerHTML = '⏸️';
+                document.body.classList.add('playing');
+                gameLoop();
+            }
         }
 
         function spawnItem() {
-            const isRock = Math.random() > 0.75; // 25% 機率出現石頭，比以前難一點
+            const isRock = Math.random() > 0.75;
             items.push({
                 x: Math.random() * canvas.width,
                 y: -30,
-                size: Math.random() * 15 + 15, // 隨機大小
+                size: Math.random() * 15 + 15,
                 speed: Math.random() * 2 + speed,
                 type: isRock ? 'rock' : 'petal',
                 angle: 0,
-                rotSpeed: (Math.random() - 0.5) * 0.1 // 旋轉速度
+                rotSpeed: (Math.random() - 0.5) * 0.1
             });
         }
 
@@ -231,10 +405,10 @@
             ctx.save();
             ctx.translate(player.x, player.y);
             
-            // 繪製半透明籃子
+            // 籃子本體
             ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
             ctx.beginPath();
-            ctx.arc(0, 0, 35, 0, Math.PI, false); // 下半圓
+            ctx.arc(0, 0, 35, 0, Math.PI, false);
             ctx.fill();
             
             // 籃子把手
@@ -244,7 +418,7 @@
             ctx.arc(0, -5, 35, Math.PI, 0, false);
             ctx.stroke();
 
-            // 裝飾：蝴蝶結
+            // 蝴蝶結裝飾
             ctx.fillStyle = '#ff9ff3';
             ctx.beginPath();
             ctx.ellipse(-15, -40, 10, 6, -0.5, 0, Math.PI*2);
@@ -257,14 +431,69 @@
             ctx.restore();
         }
 
-        function update() {
-            if(!gameRunning) return;
+        function createScorePopup(x, y, text, color = '#ff6b81') {
+            const popup = document.createElement('div');
+            popup.className = 'score-popup';
+            popup.textContent = text;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            popup.style.color = color;
+            document.body.appendChild(popup);
+            
+            setTimeout(() => popup.remove(), 1000);
+        }
+
+        function showCombo(comboCount) {
+            if (comboCount < 3) return;
+            
+            comboDisplay.textContent = comboCount + ' COMBO!';
+            comboDisplay.style.opacity = '1';
+            
+            setTimeout(() => {
+                comboDisplay.style.opacity = '0';
+            }, 1000);
+        }
+
+        function updateCombo() {
+            const now = Date.now();
+            if (now - lastCatchTime < 2000) { // 2秒內連續接住
+                combo++;
+                if (combo >= 3) {
+                    showCombo(combo);
+                }
+            } else {
+                combo = 1;
+            }
+            
+            lastCatchTime = now;
+            comboElement.innerText = combo;
+            
+            // 清除之前的超時
+            if (comboTimeout) clearTimeout(comboTimeout);
+            
+            // 設置連擊超時
+            comboTimeout = setTimeout(() => {
+                if (combo >= 3) {
+                    createScorePopup(canvas.width/2, canvas.height/2, `連擊結束! +${combo*5}`, '#ffd700');
+                    score += combo * 5;
+                    scoreElement.innerText = score;
+                }
+                combo = 0;
+                comboElement.innerText = '0';
+            }, 2000);
+        }
+
+        function gameLoop() {
+            if (!gameRunning || isPaused) return;
+            
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            if(Math.random() < 0.06) spawnItem(); // 生成頻率
+            // 生成物品
+            if (Math.random() < 0.06) spawnItem();
 
             drawPlayer();
 
+            // 更新和繪製物品
             items.forEach((item, index) => {
                 item.y += item.speed;
                 item.angle += item.rotSpeed;
@@ -273,8 +502,7 @@
                 ctx.translate(item.x, item.y);
                 ctx.rotate(item.angle);
                 
-                if(item.type === 'petal') {
-                    // 繪製花瓣 (橢圓形)
+                if (item.type === 'petal') {
                     ctx.fillStyle = '#ff6b81';
                     ctx.shadowBlur = 10;
                     ctx.shadowColor = '#ff6b81';
@@ -282,7 +510,6 @@
                     ctx.ellipse(0, 0, item.size, item.size/2, 0, 0, Math.PI*2);
                     ctx.fill();
                 } else {
-                    // 繪製石頭 (帶角的多邊形)
                     ctx.fillStyle = '#95a5a6';
                     ctx.shadowBlur = 5;
                     ctx.shadowColor = 'black';
@@ -300,29 +527,53 @@
                 const dx = player.x - item.x;
                 const dy = player.y - item.y;
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                const hitThreshold = 35 + item.size/2; // 籃子半徑 + 物品半徑
+                const hitThreshold = 35 + item.size/2;
 
-                if(dist < hitThreshold) {
-                    if(item.type === 'petal') {
+                if (dist < hitThreshold) {
+                    if (item.type === 'petal') {
                         score++;
-                        document.getElementById('score').innerText = score;
+                        scoreElement.innerText = score;
+                        
+                        // 視覺回饋
+                        createScorePopup(item.x, item.y, '+1');
+                        updateCombo();
+                        
+                        // 難度增加
+                        if (score % 5 === 0) speed += 0.2;
+                        
                         items.splice(index, 1);
-                        // 每接住5個，速度微升
-                        if(score % 5 === 0) speed += 0.2;
                     } else {
-                        // 撞到石頭
-                        gameRunning = false;
-                        document.getElementById('finalScore').innerText = score;
-                        document.getElementById('game-over').style.display = 'block';
-                        document.body.classList.remove('playing'); // 顯示滑鼠
+                        gameOver();
                     }
                 }
 
-                if(item.y > canvas.height) items.splice(index, 1);
+                if (item.y > canvas.height) items.splice(index, 1);
             });
 
-            requestAnimationFrame(update);
+            gameLoopId = requestAnimationFrame(gameLoop);
         }
+
+        function gameOver() {
+            gameRunning = false;
+            isPaused = false;
+            
+            if (gameLoopId) {
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+            
+            finalScoreElement.innerText = score;
+            document.getElementById('game-over').style.display = 'block';
+            document.body.classList.remove('playing');
+        }
+
+        // 視窗大小調整
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            player.x = canvas.width/2;
+            player.y = canvas.height - 100;
+        });
     </script>
 </body>
 </html>

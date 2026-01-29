@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <title>🌸 花瓣收集 Pro - 增強版</title>
+    <style>
+        :root {
+            --primary-pink: #ff6b81;
+            --primary-purple: #a18cd1;
+            --gold: #ffd700;
+            --rainbow: linear-gradient(45deg, #ff6b81, #ff9ff3, #a18cd1, #00d2ff);
+            --danger-red: #ff4757;
+            --success-green: #2ed573;
+        }
+
+        body { 
+            margin: 0; 
+            background: linear-gradient(to bottom, #a18cd1 0%, #fbc2eb 100%); 
+            overflow: hidden; 
+            font-family: 'Segoe UI', sans-serif; 
+            cursor: default;
+            user-select: none;
+        }
+        
+        canvas { 
+            display: block; 
+        }
+        
+        body.playing canvas {
+            cursor: none;
+        }
+
+        /* UI 容器 */
+        #ui-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            pointer-events: none;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .score-display {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 25px;
+            border-radius: 20px;
+            box-shadow: 0 5px 20px rgba(161, 140, 209, 0.3);
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-pink);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            color: var(--primary-purple);
+        }
+
+        .stats-display {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.8);
+            padding: 8px 15px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: var(--primary-purple);
+        }
+
+        /* 進度條 */
+        #progress-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: 5;
+        }
+
+        #progress-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary-pink), var(--primary-purple));
+            transition: width 0.3s ease;
+            border-radius: 0 4px 4px 0;
+        }
+
+        /* 控制面板 */
+        #control-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+
+        .control-btn {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .control-btn:hover {
+            transform: scale(1.1);
+            background: white;
+        }
+
+        /* 開始/教學畫面 */
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .content-card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            box-shadow: 0 20px 60px rgba(161, 140, 209, 0.3);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        h1 { 
+            color: var(--primary-pink); 
+            margin-bottom: 10px; 
+            font-size: 2.8rem; 
+            background: linear-gradient(45deg, var(--primary-pink), var(--primary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tutorial-list {
+            text-align: left;
+            margin: 25px 0;
+            color: #555;
+            font-size: 1.1rem;
+            line-height: 2;
+        }
+
+        .tutorial-item { 
+            display: flex; 
+            align-items: center; 
+            margin-bottom: 15px; 
+            padding: 10px;
+            border-radius: 10px;
+            transition: background 0.3s;
+        }
+
+        .tutorial-item:hover {
+            background: rgba(255, 107, 129, 0.1);
+        }
+
+        .icon { 
+            font-size: 1.8rem; 
+            margin-right: 15px; 
+            width: 40px; 
+            text-align: center; 
+        }
+
+        .desc { font-weight: 500; }
+
+        .petal-types {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 15px;
+        }
+
+        .petal-type {
+            text-align: center;
+        }
+
+        .petal-emoji {
+            font-size: 2rem;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        button {
+            background: linear-gradient(45deg, var(--primary-pink), var(--primary-purple));
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(255, 107, 129, 0.4);
+            transition: all 0.3s;
+            outline: none;
+            margin-top: 10px;
+        }
+        button:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 12px 30px rgba(255, 107, 129, 0.6);
+        }
+
+        /* Game Over 畫面 */
+        #game-over {
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .result-card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+        }
+
+        .final-score {
+            font-size: 4rem;
+            font-weight: bold;
+            background: var(--rainbow);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 20px 0;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.7);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 107, 129, 0.2);
+        }
+
+        .btn-restart {
+            background: linear-gradient(45deg, var(--primary-pink), var(--primary-purple));
+            color: white;
+            margin-top: 20px;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 8px 25px rgba(255, 107, 129, 0.4);
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        .btn-restart:hover { 
+            transform: scale(1.05); 
+            box-shadow: 0 12px 30px rgba(255, 107, 129, 0.6);
+        }
+
+        .back-link { 
+            position: absolute; top: 20px; left: 20px; 
+            color: rgba(255, 255, 255, 0.9); 
+            text-decoration: none; 
+            font-weight: bold; 
+            z-index: 20;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px 20px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+        .back-link:hover {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+        }
+
+        /* 連擊顯示 */
+        #combo-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: var(--gold);
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 15;
+            transition: opacity 0.3s;
+        }
+
+        /* 音效控制 */
+        #sound-control {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 20;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+            100% { transform: translateY(0px); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes scorePop {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+        @media (max-width: 768px) {
+            .score-display {
+                padding: 10px 15px;
+                font-size: 1.2rem;
+            }
+            
+            .score-value {
+                font-size: 1.5rem;
+            }
+            
+            .content-card {
+                padding: 25px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            #control-panel {
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .control-btn {
+                width: 45px;
+                height: 45px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 進度條 -->
+    <div id="progress-container">
+        <div id="progress-bar"></div>
+    </div>
+
+    <!-- UI 容器 -->
+    <div id="ui-container">
+        <div class="score-display">
+            <div>分數: <span id="score" class="score-value">0</span></div>
+            <div class="stats-display">
+                <div class="stat-item">時間: <span id="time" class="stat-value">60</span>s</div>
+                <div class="stat-item">關卡: <span id="level" class="stat-value">1</span></div>
+                <div class="stat-item">連擊: <span id="combo" class="stat-value">0</span></div>
+            </div>
+        </div>
+        
+        <div id="control-panel">
+            <button class="control-btn" id="pauseBtn" title="暫停">⏸️</button>
+            <button class="control-btn" id="soundBtn" title="音效">🔊</button>
+        </div>
+    </div>
+
+    <!-- 連擊顯示 -->
+    <div id="combo-display"></div>
+
+    <!-- 返回按鈕 -->
+    <a href="index.html" class="back-link">← 返回遊戲館</a>
+
+    <!-- 音效控制 -->
+    <div id="sound-control"></div>
+
+    <!-- 開始/教學畫面 -->
+    <div id="start-screen">
+        <div class="content-card">
+            <h1>🌸 花瓣收集 Pro</h1>
+            <p style="color: #888; font-size: 1.1rem;">享受春天的氣息，挑戰最高分！</p>
+            
+            <div class="tutorial-list">
+                <div class="tutorial-item">
+                    <span class="icon">👆</span>
+                    <span class="desc">移動滑鼠或手指控制籃子</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🌸</span>
+                    <span class="desc">粉紅花瓣: +1分 (連續接住有連擊獎勵)</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🌟</span>
+                    <span class="desc">金色花瓣: +5分 (稀有)</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🌈</span>
+                    <span class="desc">彩虹花瓣: +10分且清除所有石頭</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">💣</span>
+                    <span class="desc">炸彈花瓣: 小心！會減少分數</span>
+                </div>
+                <div class="tutorial-item">
+                    <span class="icon">🪨</span>
+                    <span class="desc">灰色石頭: 遊戲結束</span>
+                </div>
+            </div>
+
+            <div class="petal-types">
+                <div class="petal-type">
+                    <span class="petal-emoji">🌸</span>
+                    <span style="color: var(--primary-pink); font-weight: bold;">+1</span>
+                </div>
+                <div class="petal-type">
+                    <span class="petal-emoji">🌟</span>
+                    <span style="color: var(--gold); font-weight: bold;">+5</span>
+                </div>
+                <div class="petal-type">
+                    <span class="petal-emoji">🌈</span>
+                    <span style="font-weight: bold; background: var(--rainbow); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">+10</span>
+                </div>
+                <div class="petal-type">
+                    <span class="petal-emoji">💣</span>
+                    <span style="color: var(--danger-red); font-weight: bold;">-3</span>
+                </div>
+            </div>
+
+            <button onclick="startGame()">開始遊戲</button>
+            <p style="color: #aaa; font-size: 0.9rem; margin-top: 15px;">目標: 在60秒內獲得最高分數！</p>
+        </div>
+    </div>
+
+    <!-- 遊戲結束畫面 -->
+    <div id="game-over">
+        <div class="result-card">
+            <h2 style="color: var(--primary-pink); font-size: 2.5rem;">遊戲結束</h2>
+            <div class="final-score" id="finalScore">0</div>
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div style="color: #666; font-size: 0.9rem;">總分數</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-purple);" id="finalTotal">0</div>
+                </div>
+                <div class="stat-box">
+                    <div style="color: #666; font-size: 0.9rem;">最高連擊</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--gold);" id="finalCombo">0</div>
+                </div>
+                <div class="stat-box">
+                    <div style="color: #666; font-size: 0.9rem;">收集花瓣</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: var(--primary-p
