@@ -25,20 +25,180 @@
         }
         
         /* UI 元素 */
-        #ui-layer { 
-            position: absolute; 
-            top: 20px; 
-            width: 100%; 
-            display: flex; 
-            justify-content: space-between; 
-            padding: 0 50px; 
-            box-sizing: border-box; 
+        #ui-layer {
+            position: absolute;
+            top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 50px;
+            box-sizing: border-box;
             pointer-events: none;
             z-index: 10;
         }
         
-        .score-box { font-size: 1.5rem; font-weight: bold; text-shadow: 0 0 10px rgba(0,243,255,0.8); }
+        .score-box {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0,243,255,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
         .score-val { color: #00f3ff; }
+        
+        .lives-display {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .life-icon {
+            font-size: 1.2rem;
+            color: #00f3ff;
+            text-shadow: 0 0 5px #00f3ff;
+        }
+        
+        .combo-display {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            background: rgba(0,0,0,0.5);
+            padding: 5px 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255,0,255,0.3);
+            display: none;
+            z-index: 10;
+        }
+        
+        /* 移動控制面板 */
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 30px;
+            box-sizing: border-box;
+            z-index: 20;
+            pointer-events: none;
+        }
+        
+        .mobile-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(0, 243, 255, 0.2);
+            border: 2px solid rgba(0, 243, 255, 0.5);
+            color: white;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+            touch-action: manipulation;
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
+            transition: all 0.1s;
+        }
+        
+        .mobile-btn:active {
+            background: rgba(0, 243, 255, 0.4);
+            transform: scale(0.95);
+        }
+        
+        .fire-btn {
+            background: rgba(255, 71, 87, 0.3);
+            border-color: rgba(255, 71, 87, 0.7);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.3);
+        }
+        
+        /* 控制面板 */
+        #control-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+        }
+        
+        .control-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            pointer-events: auto;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.1);
+        }
+        
+        /* 爆炸特效 */
+        .explosion {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(255,100,100,0.6) 30%, rgba(255,50,50,0) 70%);
+            pointer-events: none;
+            z-index: 5;
+            animation: explode 0.5s forwards;
+        }
+        
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(3); opacity: 0; }
+        }
+        
+        /* 分數彈出 */
+        .score-popup {
+            position: absolute;
+            color: #00f3ff;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 0 0 10px #00f3ff;
+            pointer-events: none;
+            z-index: 6;
+            animation: floatUp 1s forwards;
+        }
+        
+        @keyframes floatUp {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-50px); opacity: 0; }
+        }
+        
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            #mobile-controls {
+                display: flex;
+            }
+            
+            .score-box {
+                font-size: 1.2rem;
+            }
+            
+            #ui-layer {
+                padding: 0 20px;
+            }
+        }
 
         /* 教學/開始畫面 */
         #start-screen {
@@ -79,9 +239,30 @@
 <body>
 
     <div id="ui-layer">
-        <div class="score-box">SCORE: <span id="score" class="score-val">0</span></div>
+        <div class="score-box">
+            <div>SCORE: <span id="score" class="score-val">0</span></div>
+            <div class="lives-display">
+                <span class="life-icon">❤️</span>
+                <span id="lives" class="score-val">3</span>
+            </div>
+        </div>
+        <div id="comboDisplay" class="combo-display">
+            連擊: <span id="comboCount">0</span> (<span id="comboMultiplier">1</span>x)
+        </div>
     </div>
-
+    
+    <!-- 移動控制面板 -->
+    <div id="mobile-controls">
+        <div class="mobile-btn" id="leftBtn">←</div>
+        <div class="mobile-btn fire-btn" id="fireBtn">🔥</div>
+        <div class="mobile-btn" id="rightBtn">→</div>
+    </div>
+    
+    <!-- 控制面板 -->
+    <div id="control-panel">
+        <button class="control-btn" id="pauseBtn" title="暫停">⏸️</button>
+    </div>
+    
     <a href="index.html" class="back-link">← 返回主選單</a>
 
     <!-- 教學畫面 -->
@@ -90,6 +271,7 @@
         <div class="tutorial">
             <div><span class="key-badge">←</span> <span class="key-badge">→</span> 移動飛船</div>
             <div style="margin-top: 15px;"><span class="key-badge">SPACE</span> 發射雷射</div>
+            <div style="margin-top: 15px;"><span class="key-badge">P</span> 暫停/繼續</div>
         </div>
         <p style="color: #ff6b6b; font-size: 0.9rem;">⚠️ 敵人速度已提升，小心！</p>
         <br>
@@ -122,9 +304,18 @@
         let bullets = [];
         let enemies = [];
         let score = 0;
+        let lives = 3;
         let gameRunning = false;
+        let gamePaused = false;
         let frame = 0;
         let animationId;
+        let explosions = [];
+        let scorePopups = [];
+        let combo = 0;
+        let comboTimeout = 0;
+        let comboMultiplier = 1;
+        let powerUps = [];
+        let timeBonus = 0;
 
         // 背景星星
         let stars = [];
@@ -136,20 +327,146 @@
         document.addEventListener('keydown', (e) => {
             if(e.key === 'ArrowLeft') player.dx = -player.speed;
             if(e.key === 'ArrowRight') player.dx = player.speed;
-            if(e.key === ' ' && gameRunning) shoot();
+            if(e.key === ' ' && gameRunning && !gamePaused) shoot();
+            if(e.key === 'p' || e.key === 'P') togglePause();
         });
         document.addEventListener('keyup', (e) => {
             if(e.key === 'ArrowLeft' || e.key === 'ArrowRight') player.dx = 0;
         });
 
+        // 移動控制按鈕監聽
+        const leftBtn = document.getElementById('leftBtn');
+        const rightBtn = document.getElementById('rightBtn');
+        const fireBtn = document.getElementById('fireBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+
+        if (leftBtn) {
+            leftBtn.addEventListener('touchstart', () => player.dx = -player.speed);
+            leftBtn.addEventListener('touchend', () => player.dx = 0);
+            leftBtn.addEventListener('mousedown', () => player.dx = -player.speed);
+            leftBtn.addEventListener('mouseup', () => player.dx = 0);
+            leftBtn.addEventListener('mouseleave', () => player.dx = 0);
+        }
+        if (rightBtn) {
+            rightBtn.addEventListener('touchstart', () => player.dx = player.speed);
+            rightBtn.addEventListener('touchend', () => player.dx = 0);
+            rightBtn.addEventListener('mousedown', () => player.dx = player.speed);
+            rightBtn.addEventListener('mouseup', () => player.dx = 0);
+            rightBtn.addEventListener('mouseleave', () => player.dx = 0);
+        }
+        if (fireBtn) {
+            fireBtn.addEventListener('touchstart', () => { if(gameRunning && !gamePaused) shoot(); });
+            fireBtn.addEventListener('mousedown', () => { if(gameRunning && !gamePaused) shoot(); });
+        }
+        if (pauseBtn) {
+            pauseBtn.addEventListener('click', togglePause);
+        }
+
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             gameRunning = true;
+            gamePaused = false;
+            score = 0;
+            lives = 3;
+            bullets = [];
+            enemies = [];
+            explosions = [];
+            scorePopups = [];
+            powerUps = [];
+            combo = 0;
+            comboTimeout = 0;
+            comboMultiplier = 1;
+            timeBonus = 0;
+            updateLivesDisplay();
+            document.getElementById('score').innerText = score;
+            document.getElementById('comboDisplay').style.display = 'none';
             loop();
+            
+            // 除錯訊息
+            console.log('遊戲開始! 測試模式啟用: 敵人更大更慢，更容易得分');
+            console.log('碰撞檢測使用圓形算法，距離 < 半徑');
         }
 
         function shoot() {
             bullets.push({ x: player.x, y: player.y - 25, w: 4, h: 15, speed: 10, color: '#00f3ff' });
+        }
+
+        function updateLivesDisplay() {
+            document.getElementById('lives').innerText = lives;
+        }
+
+        function createExplosion(x, y, color) {
+            explosions.push({
+                x, y, color,
+                radius: 0,
+                maxRadius: 30,
+                duration: 0,
+                maxDuration: 30
+            });
+        }
+
+        function createScorePopup(x, y, points) {
+            scorePopups.push({
+                x, y,
+                text: `+${points}`,
+                duration: 0,
+                maxDuration: 60
+            });
+        }
+
+        function createPowerUp(x, y) {
+            const types = ['score', 'life', 'combo'];
+            const type = types[Math.floor(Math.random() * types.length)];
+            const colors = {
+                'score': '#00ff00',
+                'life': '#ff0000',
+                'combo': '#ffff00'
+            };
+            
+            powerUps.push({
+                x, y,
+                type: type,
+                color: colors[type],
+                size: 15,
+                speed: 2,
+                duration: 0,
+                maxDuration: 300
+            });
+        }
+
+        function updateCombo() {
+            if (comboTimeout > 0) {
+                comboTimeout--;
+                if (comboTimeout === 0) {
+                    combo = 0;
+                    comboMultiplier = 1;
+                }
+            }
+            
+            // 更新連擊顯示
+            const comboDisplay = document.getElementById('comboDisplay');
+            const comboCount = document.getElementById('comboCount');
+            const comboMultiplierElem = document.getElementById('comboMultiplier');
+            
+            if (combo > 1) {
+                comboDisplay.style.display = 'block';
+                comboCount.textContent = combo;
+                comboMultiplierElem.textContent = comboMultiplier;
+                
+                // 連擊越高，顏色越亮
+                const hue = (combo * 10) % 360;
+                comboDisplay.style.color = `hsl(${hue}, 100%, 70%)`;
+                comboDisplay.style.textShadow = `0 0 10px hsl(${hue}, 100%, 70%)`;
+            } else {
+                comboDisplay.style.display = 'none';
+            }
+        }
+
+        function togglePause() {
+            if (!gameRunning) return;
+            gamePaused = !gamePaused;
+            pauseBtn.textContent = gamePaused ? '▶️' : '⏸️';
+            pauseBtn.title = gamePaused ? '繼續' : '暫停';
         }
 
         // --- 繪製超酷飛船 ---
@@ -209,7 +526,7 @@
                 // 加上內部細節
                 ctx.fillStyle = 'rgba(0,0,0,0.2)';
                 ctx.fillRect(enemy.x - enemy.size/4, enemy.y - enemy.size/4, enemy.size/2, enemy.size/2);
-            } 
+            }
             else if (enemy.shape === 'circle') {
                 ctx.beginPath();
                 ctx.arc(enemy.x, enemy.y, enemy.size/2, 0, Math.PI * 2);
@@ -219,7 +536,7 @@
                 ctx.beginPath();
                 ctx.arc(enemy.x, enemy.y, enemy.size/6, 0, Math.PI * 2);
                 ctx.fill();
-            } 
+            }
             else if (enemy.shape === 'triangle') {
                 ctx.beginPath();
                 ctx.moveTo(enemy.x, enemy.y - enemy.size/2);
@@ -231,8 +548,47 @@
             ctx.restore();
         }
 
+        function drawExplosions() {
+            explosions.forEach((exp, index) => {
+                exp.duration++;
+                exp.radius = (exp.duration / exp.maxDuration) * exp.maxRadius;
+                
+                ctx.save();
+                ctx.globalAlpha = 1 - (exp.duration / exp.maxDuration);
+                ctx.fillStyle = exp.color;
+                ctx.beginPath();
+                ctx.arc(exp.x, exp.y, exp.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+                
+                if (exp.duration >= exp.maxDuration) {
+                    explosions.splice(index, 1);
+                }
+            });
+        }
+
+        function drawScorePopups() {
+            scorePopups.forEach((popup, index) => {
+                popup.duration++;
+                const y = popup.y - (popup.duration / popup.maxDuration) * 50;
+                const alpha = 1 - (popup.duration / popup.maxDuration);
+                
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = '#00f3ff';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(popup.text, popup.x, y);
+                ctx.restore();
+                
+                if (popup.duration >= popup.maxDuration) {
+                    scorePopups.splice(index, 1);
+                }
+            });
+        }
+
         function update() {
-            if(!gameRunning) return;
+            if(!gameRunning || gamePaused) return;
             
             // 清空畫布
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -271,64 +627,180 @@
             });
 
             // Enemies Spawning
-            // 每 40 幀生成一個，比以前快 (以前是60)
-            if(frame % 40 === 0) {
+            // 每 60 幀生成一個，比以前慢 (更容易擊中)
+            if(frame % 60 === 0) {
                 const shapes = ['square', 'circle', 'triangle'];
                 const colors = ['#ff6b6b', '#feca57', '#ff9ff3']; // 紅, 黃, 粉
                 
                 const randomShape = shapes[Math.floor(Math.random() * shapes.length)];
                 const randomColor = colors[Math.floor(Math.random() * colors.length)];
                 
-                // 速度更快：基礎 4，隨機加 3 (以前是 2+2)
-                const randomSpeed = 4 + Math.random() * 3;
+                // 速度較慢：基礎 2，隨機加 2 (更容易擊中)
+                const randomSpeed = 2 + Math.random() * 2;
 
-                enemies.push({ 
-                    x: Math.random() * (canvas.width - 40) + 20, 
-                    y: -30, 
-                    size: Math.random() * 20 + 30, 
-                    speed: randomSpeed, 
+                enemies.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: -30,
+                    size: Math.random() * 20 + 40, // 更大更容易擊中
+                    speed: randomSpeed,
                     shape: randomShape,
                     color: randomColor
                 });
             }
+            
+            // 時間獎勵：每 5 秒 +10 分
+            if (frame % 300 === 0 && gameRunning && !gamePaused) {
+                timeBonus += 10;
+                score += 10;
+                document.getElementById('score').innerText = score;
+                createScorePopup(canvas.width/2, canvas.height/2, '時間獎勵 +10');
+            }
 
             // Enemies Logic
-            enemies.forEach((e, eIndex) => {
+            // 使用反向循環避免索引問題
+            for (let eIndex = enemies.length - 1; eIndex >= 0; eIndex--) {
+                const e = enemies[eIndex];
                 e.y += e.speed;
                 drawEnemy(e);
 
+                let enemyHit = false;
+                
                 // 碰撞檢測：子彈擊中敵人
-                // 簡單矩形判定，為了對圓形公平，判定範圍縮小一點
-                bullets.forEach((b, bIndex) => {
-                    const hitDist = Math.abs(b.x - e.x);
-                    const hitY = Math.abs(b.y - e.y);
+                // 使用圓形碰撞檢測
+                for (let bIndex = bullets.length - 1; bIndex >= 0; bIndex--) {
+                    const b = bullets[bIndex];
+                    // 子彈中心座標
+                    const bulletCenterX = b.x;
+                    const bulletCenterY = b.y + b.h/2;
                     
-                    if (hitDist < e.size/2 && hitY < e.size/2) {
-                        // 擊中特效 (簡單的爆炸圈)
-                        ctx.save();
-                        ctx.strokeStyle = e.color;
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(e.x, e.y, e.size, 0, Math.PI*2);
-                        ctx.stroke();
-                        ctx.restore();
-
+                    const dx = bulletCenterX - e.x;
+                    const dy = bulletCenterY - e.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 碰撞半徑：敵人半徑 + 子彈半徑
+                    const collisionRadius = e.size/2 + Math.max(b.w, b.h)/2;
+                    
+                    if (distance < collisionRadius) {
+                        // 擊中特效
+                        createExplosion(e.x, e.y, e.color);
+                        
+                        // 連擊系統
+                        combo++;
+                        comboTimeout = 120; // 2秒內擊中下一個敵人保持連擊
+                        comboMultiplier = Math.min(5, 1 + Math.floor(combo / 3));
+                        
+                        // 基礎分數 + 連擊獎勵
+                        const basePoints = 10;
+                        const comboBonus = (combo - 1) * 2;
+                        const totalPoints = basePoints + comboBonus;
+                        
+                        createScorePopup(e.x, e.y, totalPoints);
+                        
+                        // 隨機生成道具 (30% 機率)
+                        if (Math.random() < 0.3) {
+                            createPowerUp(e.x, e.y);
+                        }
+                        
                         enemies.splice(eIndex, 1);
                         bullets.splice(bIndex, 1);
-                        score += 10;
+                        score += totalPoints;
                         document.getElementById('score').innerText = score;
+                        
+                        // 除錯訊息
+                        console.log(`擊中敵人! 距離: ${distance.toFixed(1)}, 碰撞半徑: ${collisionRadius.toFixed(1)}`);
+                        console.log(`連擊: ${combo}, 倍率: ${comboMultiplier}x, 分數: +${totalPoints}`);
+                        
+                        enemyHit = true;
+                        break; // 跳出子彈循環，避免重複檢測
                     }
-                });
+                }
+
+                if (enemyHit) continue; // 敵人已被擊中，跳過後續檢測
 
                 // 碰撞檢測：敵人撞到玩家
                 // 玩家判定範圍約為 30px 半徑
                 const playerDist = Math.sqrt(Math.pow(player.x - e.x, 2) + Math.pow(player.y - e.y, 2));
                 if (playerDist < 35) {
-                    gameOver();
+                    // 減少生命值
+                    lives--;
+                    updateLivesDisplay();
+                    createExplosion(e.x, e.y, '#ff4757');
+                    enemies.splice(eIndex, 1);
+                    
+                    // 重置連擊
+                    combo = 0;
+                    comboMultiplier = 1;
+                    
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                    continue;
                 }
 
                 if(e.y > canvas.height) enemies.splice(eIndex, 1);
-            });
+            }
+            
+            // 更新連擊計時器
+            updateCombo();
+            
+            // 道具邏輯
+            for (let pIndex = powerUps.length - 1; pIndex >= 0; pIndex--) {
+                const p = powerUps[pIndex];
+                p.y += p.speed;
+                p.duration++;
+                
+                // 繪製道具
+                ctx.save();
+                ctx.fillStyle = p.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 閃爍效果
+                if (p.duration > p.maxDuration * 0.7) {
+                    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(p.duration * 0.2);
+                    ctx.fillStyle = 'white';
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size/2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+                
+                // 道具與玩家碰撞
+                const distToPlayer = Math.sqrt(Math.pow(player.x - p.x, 2) + Math.pow(player.y - p.y, 2));
+                if (distToPlayer < 30) {
+                    // 道具效果
+                    switch(p.type) {
+                        case 'score':
+                            score += 50;
+                            createScorePopup(p.x, p.y, 50);
+                            break;
+                        case 'life':
+                            lives = Math.min(5, lives + 1);
+                            updateLivesDisplay();
+                            createScorePopup(p.x, p.y, '生命+1');
+                            break;
+                        case 'combo':
+                            combo += 3;
+                            comboTimeout = 180;
+                            createScorePopup(p.x, p.y, '連擊+3');
+                            break;
+                    }
+                    powerUps.splice(pIndex, 1);
+                    document.getElementById('score').innerText = score;
+                }
+                
+                // 道具超時或超出畫面
+                if (p.duration >= p.maxDuration || p.y > canvas.height) {
+                    powerUps.splice(pIndex, 1);
+                }
+            }
+
+            // 繪製特效
+            drawExplosions();
+            drawScorePopups();
 
             frame++;
             animationId = requestAnimationFrame(update);
